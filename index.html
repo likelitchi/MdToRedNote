@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visual Clone Pro - 爆款卡片生成器</title>
+    <title>Visual Clone Pro Suite</title>
     
-    <!-- 核心庫引用 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -34,8 +33,8 @@
         .sidebar-scroll::-webkit-scrollbar { width: 4px; }
         .sidebar-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
-        /* 畫布基礎樣式 */
-        .card-container {
+        /* --- Base Canvas Styles --- */
+        .card-container, .merger-container {
             width: var(--canvas-w);
             height: var(--canvas-h);
             background-color: white;
@@ -51,36 +50,53 @@
             background-repeat: no-repeat;
         }
 
-        /* 區域定位 */
+        /* --- Mode 1: Generator Areas --- */
         .area-header { position: absolute; top: 0; left: 0; width: 100%; height: var(--header-h); z-index: 100; pointer-events: none; }
         .area-footer { position: absolute; bottom: 0; left: 0; width: 100%; height: var(--footer-h); z-index: 100; pointer-events: none; display: flex; align-items: center; justify-content: center; }
         .area-content { position: absolute; top: var(--header-h); left: 0; width: 100%; height: var(--content-h); padding: 60px 80px; box-sizing: border-box; z-index: 10; overflow: hidden; }
 
-        /* --- 款式風格 CSS --- */
-        
-        /* 1. 簡約風 */
+        /* --- Mode 2: Merger Specific Styles --- */
+        .merger-bg-img {
+            position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;
+        }
+        .merger-overlay-viewport {
+            position: absolute;
+            top: var(--header-h);
+            left: 0;
+            width: 100%;
+            height: var(--content-h);
+            overflow: hidden;
+            z-index: 2;
+        }
+        .merger-overlay-img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* --- Styles: Minimal --- */
         .style-minimal { font-family: 'Noto Serif SC', serif; background-color: #fdfdfd; color: #333; }
         .style-minimal .accent-line { width: 80px; height: 4px; background: #333; margin: 40px 0; }
         
-        /* 2. 大字報 */
+        /* --- Styles: Poster --- */
         .style-poster { font-family: 'Noto Sans SC', sans-serif; background-color: #FFD700; color: #000; }
         .style-poster .big-title { font-weight: 900; line-height: 1.1; text-transform: uppercase; border: 8px solid #000; padding: 25px; background: #fff; box-shadow: 15px 15px 0px #000; color: #000; }
         .style-poster .content-box { background: #fff; border: 4px solid #000; padding: 30px; box-shadow: 10px 10px 0px #000; color: #000; }
 
-        /* 3. 備忘錄 */
+        /* --- Styles: Memo --- */
         .style-memo { font-family: 'Courier New', Courier, monospace; background-color: #fff9c4; color: #4a4a4a; background-image: linear-gradient(#e1e1e1 2px, transparent 2px); background-size: 100% 3rem; }
         .style-memo .tape { width: 200px; height: 60px; background: rgba(254, 240, 138, 0.7); transform: rotate(-3deg); position: absolute; top: -30px; left: 50%; margin-left: -100px; z-index: 5; }
         
-        /* 4. 手賬風 */
+        /* --- Styles: Journal --- */
         .style-journal { font-family: 'ZCOOL KuaiLe', cursive; background-color: #FFF0F5; color: #5D4037; background-image: radial-gradient(#FFB6C1 2px, transparent 2px); background-size: 40px 40px; }
         .style-journal .journal-card { border: 6px dashed #f9a8d4; border-radius: 60px; background: rgba(255,255,255,0.85); padding: 40px; }
         
-        /* 5. 干貨風 */
+        /* --- Styles: Dry --- */
         .style-dry { font-family: 'Noto Sans SC', sans-serif; background-color: #1e293b; color: #f8fafc; }
         .style-dry .glass-card { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); border: 2px solid rgba(255,255,255,0.2); border-radius: 30px; padding: 40px; }
         .style-dry .num-badge { background: #38bdf8; color: #0f172a; font-weight: 900; border-radius: 50%; width: 50px; height: 50px; display: inline-flex; align-items: center; justify-content: center; margin-right: 20px; font-size: 28px; }
 
-        /* IP 角色圖層 */
+        /* IP Layer */
         .ip-layer { position: absolute; inset: 0; z-index: 200; pointer-events: none; background: transparent; }
         .draggable-ip { 
             position: absolute; 
@@ -93,38 +109,50 @@
         }
         .draggable-ip:active { cursor: grabbing; }
 
-        /* Footer 毛玻璃樣式 */
         .footer-content-blur { background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 10px 50px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
 
         #export-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        
+        /* Tab State Styles */
+        .nav-btn.active { background-color: rgb(241, 245, 249); color: rgb(15, 23, 42); }
+        .nav-btn { color: rgb(100, 116, 139); }
     </style>
 </head>
 <body class="flex flex-col">
 
     <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-50">
-        <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-rose-500 rounded-lg flex items-center justify-center text-white shadow-sm shadow-rose-200">
-                <i data-lucide="camera" size="18"></i>
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-rose-500 rounded-lg flex items-center justify-center text-white shadow-sm shadow-rose-200">
+                    <i data-lucide="layers" size="18"></i>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight text-slate-800">Visual <span class="text-rose-500">Suite</span></h1>
             </div>
-            <h1 class="text-xl font-bold tracking-tight text-slate-800">Visual Clone <span class="text-rose-500">Engine Pro</span></h1>
+
+            <div class="flex bg-slate-100 p-1 rounded-lg">
+                <button onclick="switchMode('gen')" id="nav-gen" class="nav-btn active px-4 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2">
+                    <i data-lucide="pen-tool" size="14"></i> Generative Card
+                </button>
+                <button onclick="switchMode('merge')" id="nav-merge" class="nav-btn px-4 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2">
+                    <i data-lucide="scissors" size="14"></i> Image Merger
+                </button>
+            </div>
         </div>
-        <button onclick="downloadAll()" class="bg-rose-500 hover:bg-rose-600 text-white px-6 py-2 rounded-full font-bold flex items-center gap-2 transition-all shadow-lg shadow-rose-200 active:scale-95">
-            <i data-lucide="download" size="18"></i> 打包導出高清 ZIP
+
+        <button onclick="handleExport()" id="export-btn" class="bg-rose-500 hover:bg-rose-600 text-white px-6 py-2 rounded-full font-bold flex items-center gap-2 transition-all shadow-lg shadow-rose-200 active:scale-95">
+            <i data-lucide="download" size="18"></i> <span>Download ZIP</span>
         </button>
     </header>
 
     <main class="flex flex-1 overflow-hidden">
-        <!-- 側邊欄編輯器 -->
         <aside class="w-[420px] bg-white border-r border-slate-200 flex flex-col sidebar-scroll overflow-y-auto">
-            <div class="p-6 space-y-8">
-                
-                <!-- 1. 款式切換 -->
+            
+            <div id="sidebar-gen" class="p-6 space-y-8">
                 <section class="space-y-4">
                     <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">1. 款式切換 (Styles)</h3>
                     <div class="grid grid-cols-3 gap-2" id="style-selector"></div>
                 </section>
 
-                <!-- 2. 資產上傳 -->
                 <section class="space-y-4">
                     <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">2. 視覺資產上傳</h3>
                     <div class="grid grid-cols-2 gap-4">
@@ -141,7 +169,6 @@
                     </div>
                 </section>
 
-                <!-- 3. 內容編輯 -->
                 <section class="space-y-4">
                     <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">3. 內容動態編輯</h3>
                     <div class="space-y-4">
@@ -159,36 +186,88 @@
                     </div>
                 </section>
 
-                <!-- 4. 品牌色 -->
                 <section class="space-y-4">
                     <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">4. 視覺主色 (Theme Color)</h3>
                     <div id="theme-box" class="flex gap-3"></div>
                 </section>
             </div>
+
+            <div id="sidebar-merge" class="p-6 space-y-8 hidden">
+                <section class="space-y-4">
+                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Image Combination</h3>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-bold mb-2 text-slate-700">1. Background Image</label>
+                            <label class="border-2 border-dashed border-slate-200 rounded-xl h-32 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-50 transition-all bg-slate-50">
+                                <i data-lucide="monitor" class="text-slate-400 mb-2"></i>
+                                <span class="text-xs text-slate-500">1080 x 1350px</span>
+                                <input type="file" class="hidden" accept="image/*" onchange="handleMergerUpload(event, 'bg')">
+                            </label>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold mb-2 text-slate-700">2. Content Overlay</label>
+                            <label class="border-2 border-dashed border-slate-200 rounded-xl h-32 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-50 transition-all bg-slate-50">
+                                <i data-lucide="layers" class="text-slate-400 mb-2"></i>
+                                <span class="text-xs text-slate-500">Scrollable Content</span>
+                                <input type="file" class="hidden" accept="image/*" onchange="handleMergerUpload(event, 'overlay')">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="bg-amber-50 border border-amber-200 p-4 rounded-lg text-amber-800 text-xs leading-relaxed">
+                        <p class="font-bold mb-1">Clipping Logic:</p>
+                        <ul class="list-disc pl-4 space-y-1">
+                            <li>Overlay starts at <b>120px</b> (Header space).</li>
+                            <li>Footer space <b>60px</b> is preserved from BG.</li>
+                            <li>Visible Overlay Height: <b>1170px</b>.</li>
+                            <li>Excess content is clipped.</li>
+                        </ul>
+                    </div>
+                </section>
+            </div>
+
         </aside>
 
-        <!-- 畫布預覽區 -->
         <section class="flex-1 overflow-y-auto p-12 bg-slate-50 flex flex-col items-center custom-scroll" id="preview-section">
             <div class="mb-8 flex items-center gap-4 text-slate-400 bg-white px-6 py-2 rounded-full shadow-sm">
                 <i data-lucide="eye" size="18"></i>
-                <span class="text-sm font-bold uppercase tracking-tighter">HD Preview • 1080 x 1350 • 款式：<span id="current-style-name">簡約風</span></span>
+                <span class="text-sm font-bold uppercase tracking-tighter">HD Preview • 1080 x 1350</span>
             </div>
+
             <div id="canvas-wrapper" class="flex flex-col items-center"></div>
+
+            <div id="merger-wrapper" class="hidden">
+                 <div id="merger-card" class="merger-container bg-white">
+                    <img id="merge-bg-el" class="merger-bg-img hidden" />
+
+                    <div class="area-header"></div>
+
+                    <div class="merger-overlay-viewport">
+                        <img id="merge-overlay-el" class="merger-overlay-img hidden" />
+                    </div>
+
+                    <div class="area-footer"></div>
+                 </div>
+            </div>
+
         </section>
     </main>
 
-    <!-- 導出遮罩 -->
     <div id="export-overlay">
         <div class="animate-spin text-rose-400 mb-6"><i data-lucide="refresh-cw" size="64"></i></div>
-        <h2 class="text-3xl font-black mb-2 tracking-tighter uppercase">Generative HD Assets</h2>
-        <p class="text-slate-400 font-mono" id="progress-val">0 / 0</p>
+        <h2 class="text-3xl font-black mb-2 tracking-tighter uppercase">Rendering Assets</h2>
+        <p class="text-slate-400 font-mono" id="progress-val">Processing...</p>
     </div>
 
-    <!-- 隱藏測量器 -->
     <div id="measurer" style="position:absolute; visibility:hidden; width:920px; font-size:40px; line-height:1.6;"></div>
 
     <script>
+        // --- State ---
         const state = {
+            mode: 'gen', // 'gen' or 'merge'
+            // Gen Mode Data
             title: "2024年必須掌握的\n前端視覺開發技巧",
             author: "@VisualCloneLab",
             content: `1. 掌握色彩心理學\n色彩不僅是裝飾，它能直接影響用戶的情緒。暖色調傳遞活力，冷色調傳遞專業。\n\n2. 留白的藝術\n不要填滿每一個角落。適當的留白能讓設計呼吸，引導視線聚焦核心內容。\n\n3. 字體層級關係\n通過字號、字重、顏色深淺建立清晰的信息層級。標題要大，正文要易讀。\n\n4. 微交互動畫\n添加細微的 Hover 效果或點擊回饋，能極大提升產品的精緻感和用戶體驗。\n\n5. 響應式思維\n設計不應只針對單一螢幕。思考內容在不同尺寸下如何流佈局，是現代前端的基礎。`,
@@ -198,7 +277,10 @@
             style: "minimal",
             baseImg: null,
             ipImg: null,
-            previewScale: 0.35
+            previewScale: 0.35,
+            // Merger Mode Data
+            mergeBg: null,
+            mergeOverlay: null
         };
 
         const styleConfigs = [
@@ -211,7 +293,7 @@
 
         const themes = ["#f43f5e", "#3b82f6", "#10b981", "#f59e0b", "#000000"];
 
-        // 拖拽全域狀態
+        // Dragging State
         let dragTarget = null;
         let startX, startY, initialX, initialY;
         let isMoving = false;
@@ -219,7 +301,7 @@
         function init() {
             lucide.createIcons();
             
-            // 初始化款式
+            // --- Init Gen Sidebar ---
             const sBox = document.getElementById('style-selector');
             styleConfigs.forEach(s => {
                 const btn = document.createElement('button');
@@ -230,29 +312,28 @@
                 sBox.appendChild(btn);
             });
 
-            // 初始化顏色
             const tBox = document.getElementById('theme-box');
             themes.forEach(c => {
                 const b = document.createElement('button');
                 b.className = `w-10 h-10 rounded-full border-2 border-white shadow-sm transition-transform active:scale-90 ${state.theme === c ? 'ring-2 ring-slate-400' : ''}`;
                 b.style.backgroundColor = c;
-                b.onclick = () => { state.theme = c; render(); };
+                b.onclick = () => { state.theme = c; renderGen(); };
                 tBox.appendChild(b);
             });
 
-            // 綁定輸入
+            // Input Bindings
             ['in-title', 'in-author', 'in-content', 'in-ad'].forEach(id => {
                 const el = document.getElementById(id);
                 const key = id.split('-')[1] === 'ad' ? 'adText' : id.split('-')[1];
                 el.value = state[key];
-                el.oninput = (e) => { state[key] = e.target.value; render(); };
+                el.oninput = (e) => { state[key] = e.target.value; renderGen(); };
             });
 
             const pNumCheck = document.getElementById('check-pagenum');
             pNumCheck.checked = state.showPageNum;
-            pNumCheck.onchange = (e) => { state.showPageNum = e.target.checked; render(); };
+            pNumCheck.onchange = (e) => { state.showPageNum = e.target.checked; renderGen(); };
 
-            // 註冊全域拖拽
+            // Drag Events
             window.addEventListener('mousemove', onGlobalMouseMove);
             window.addEventListener('mouseup', onGlobalMouseUp);
             window.addEventListener('touchmove', (e) => onGlobalMouseMove(e), { passive: false });
@@ -260,16 +341,35 @@
 
             window.onresize = adjustScale;
             adjustScale();
-            render();
+            renderGen();
         }
 
-        // 強力修正切換款式：確保 UI 立即響應
-        // 修正 switchStyle 函數
+        // --- Core Functions ---
+
+        function switchMode(mode) {
+            state.mode = mode;
+            
+            // Toggle Navbar State
+            document.getElementById('nav-gen').classList.toggle('active', mode === 'gen');
+            document.getElementById('nav-merge').classList.toggle('active', mode === 'merge');
+
+            // Toggle Sidebar
+            document.getElementById('sidebar-gen').classList.toggle('hidden', mode !== 'gen');
+            document.getElementById('sidebar-merge').classList.toggle('hidden', mode !== 'merge');
+
+            // Toggle Preview
+            document.getElementById('canvas-wrapper').classList.toggle('hidden', mode !== 'gen');
+            document.getElementById('merger-wrapper').classList.toggle('hidden', mode !== 'merge');
+
+            // Toggle Button Text
+            const exportSpan = document.querySelector('#export-btn span');
+            exportSpan.innerText = mode === 'gen' ? 'Download ZIP' : 'Export PNG';
+
+            adjustScale();
+        }
+
         function switchStyle(id) {
             state.style = id;
-            document.getElementById('current-style-name').innerText = styleConfigs.find(x => x.id === id).name;
-            
-            // 更新按鈕樣式
             styleConfigs.forEach(s => {
                 const b = document.getElementById(`btn-${s.id}`);
                 const isActive = s.id === id;
@@ -277,11 +377,7 @@
                 const icon = b.querySelector('i');
                 if (icon) icon.className = `${isActive ? 'text-rose-500' : 'text-slate-400'}`;
             });
-
-            // 立即強制重新渲染
-            render();
-            
-            // 重新創建圖標
+            renderGen();
             setTimeout(() => lucide.createIcons(), 10);
         }
 
@@ -291,6 +387,7 @@
             document.documentElement.style.setProperty('--preview-scale', state.previewScale);
         }
 
+        // --- Handlers: Gen Mode ---
         function handleImgUpload(e, type) {
             const file = e.target.files[0];
             if (!file) return;
@@ -298,11 +395,39 @@
             reader.onload = (ev) => {
                 if (type === 'base') state.baseImg = ev.target.result;
                 if (type === 'ip') state.ipImg = ev.target.result;
-                render();
+                renderGen();
             };
             reader.readAsDataURL(file);
         }
 
+        // --- Handlers: Merger Mode ---
+        function handleMergerUpload(e, type) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                if (type === 'bg') state.mergeBg = ev.target.result;
+                if (type === 'overlay') state.mergeOverlay = ev.target.result;
+                renderMerger();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderMerger() {
+            const bgEl = document.getElementById('merge-bg-el');
+            const overEl = document.getElementById('merge-overlay-el');
+
+            if (state.mergeBg) {
+                bgEl.src = state.mergeBg;
+                bgEl.classList.remove('hidden');
+            }
+            if (state.mergeOverlay) {
+                overEl.src = state.mergeOverlay;
+                overEl.classList.remove('hidden');
+            }
+        }
+
+        // --- Logic: Gen Calculation ---
         function calculatePages(paras) {
             const pages = [[]]; 
             let currentSet = [];
@@ -310,7 +435,6 @@
             const maxH = 920;
             const m = document.getElementById('measurer');
             
-            // 每次計算前確保款式同步
             m.className = `style-${state.style}`;
             m.style.fontFamily = (state.style === 'minimal') ? 'Noto Serif SC, serif' : 'Noto Sans SC, sans-serif';
 
@@ -330,7 +454,7 @@
             return pages;
         }
 
-        function render() {
+        function renderGen() {
             const wrapper = document.getElementById('canvas-wrapper');
             wrapper.innerHTML = '';
             const paras = state.content.split('\n').filter(p => p.trim() !== '');
@@ -345,8 +469,6 @@
             card.style.setProperty('--theme', state.theme);
             if (state.baseImg) card.style.backgroundImage = `url(${state.baseImg})`;
 
-            const header = ``;
-            
             const hasFooterText = state.adText && state.adText.trim() !== "";
             const footer = document.createElement('div');
             footer.className = 'area-footer';
@@ -363,7 +485,7 @@
             let bodyHtml = isCover ? renderCover() : renderContent(paras, num);
 
             card.innerHTML = `
-                ${header}
+                <div class="area-header"></div>
                 <div class="area-content">${bodyHtml}</div>
                 <div class="ip-layer">
                     ${state.ipImg ? `
@@ -408,6 +530,7 @@
             return `<div class="h-full w-full">${state.style === 'memo' ? '<div class="tape"></div>' : ''}${items}</div>`;
         }
 
+        // --- Drag Logic ---
         function onIpStart(e) {
             dragTarget = e.currentTarget;
             const evt = e.type.includes('touch') ? e.touches[0] : e;
@@ -441,7 +564,64 @@
             dragTarget = null;
         }
 
-        async function downloadAll() {
+        // --- Export Logic ---
+        function handleExport() {
+            if (state.mode === 'gen') {
+                downloadZip();
+            } else {
+                downloadMergerPng();
+            }
+        }
+
+        async function downloadMergerPng() {
+            const overlay = document.getElementById('export-overlay');
+            const prog = document.getElementById('progress-val');
+            overlay.style.display = 'flex';
+            prog.innerText = "Generating PNG...";
+
+            const card = document.getElementById('merger-card');
+            const clone = card.cloneNode(true);
+            
+            // Set for High Res Export
+            clone.style.transform = 'none';
+            clone.style.margin = '0';
+            clone.style.position = 'fixed';
+            clone.style.top = '0';
+            clone.style.left = '-9999px';
+            clone.style.width = '1080px';
+            clone.style.height = '1350px';
+            
+            document.body.appendChild(clone);
+            
+            // Show hidden elements in clone if they were set
+            const bg = clone.querySelector('.merger-bg-img');
+            const ov = clone.querySelector('.merger-overlay-img');
+            if(state.mergeBg) bg.classList.remove('hidden');
+            if(state.mergeOverlay) ov.classList.remove('hidden');
+
+            try {
+                const canvas = await html2canvas(clone, {
+                    scale: 2,
+                    width: 1080,
+                    height: 1350,
+                    useCORS: true,
+                    allowTaint: true
+                });
+                
+                const link = document.createElement('a');
+                link.download = `Merged_${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } catch (err) {
+                console.error(err);
+                alert("Export failed");
+            } finally {
+                document.body.removeChild(clone);
+                overlay.style.display = 'none';
+            }
+        }
+
+        async function downloadZip() {
             const overlay = document.getElementById('export-overlay');
             const prog = document.getElementById('progress-val');
             overlay.style.display = 'flex';
@@ -449,11 +629,10 @@
             const cards = document.querySelectorAll('.card-container');
             
             for (let i = 0; i < cards.length; i++) {
-                prog.innerText = `${i+1} / ${cards.length}`;
+                prog.innerText = `Processing Card ${i+1} / ${cards.length}`;
                 const original = cards[i];
                 const clone = original.cloneNode(true);
                 
-                // 強制規範克隆節點樣式
                 clone.style.transform = 'none';
                 clone.style.margin = '0';
                 clone.style.position = 'fixed';
@@ -463,107 +642,47 @@
                 clone.style.height = '1350px';
                 clone.style.boxSizing = 'border-box';
                 
-                // 根據款式設置正確的背景色
                 let bgColor = '#ffffff';
                 let textColor = '#000000';
-                let accentColor = '#000000';
                 
                 switch(state.style) {
-                    case 'dry':
-                        bgColor = '#1e293b';
-                        textColor = '#f8fafc';
-                        accentColor = '#38bdf8';
-                        break;
-                    case 'poster':
-                        bgColor = '#FFD700';
-                        textColor = '#000000';
-                        accentColor = '#000000';
-                        break;
-                    case 'memo':
-                        bgColor = '#fff9c4';
-                        textColor = '#4a4a4a';
-                        accentColor = '#4a4a4a';
-                        break;
-                    case 'journal':
-                        bgColor = '#FFF0F5';
-                        textColor = '#5D4037';
-                        accentColor = '#f9a8d4';
-                        break;
-                    case 'minimal':
-                        bgColor = '#fdfdfd';
-                        textColor = '#333333';
-                        accentColor = state.theme;
-                        break;
+                    case 'dry': bgColor = '#1e293b'; textColor = '#f8fafc'; break;
+                    case 'poster': bgColor = '#FFD700'; textColor = '#000000'; break;
+                    case 'memo': bgColor = '#fff9c4'; textColor = '#4a4a4a'; break;
+                    case 'journal': bgColor = '#FFF0F5'; textColor = '#5D4037'; break;
+                    case 'minimal': bgColor = '#fdfdfd'; textColor = '#333333'; break;
                 }
                 
                 clone.style.backgroundColor = bgColor;
                 document.body.appendChild(clone);
 
                 const canvas = await html2canvas(clone, { 
-                    scale: 2, // 提高DPI
+                    scale: 2, 
                     width: 1080, 
                     height: 1350, 
                     useCORS: true, 
                     backgroundColor: bgColor,
-                    imageTimeout: 0, 
-                    logging: false,
                     allowTaint: true,
                     onclone: (clonedDoc, clonedElement) => {
-                        // 確保整個卡片可見
                         const clonedCard = clonedElement.querySelector('.card-container');
                         if (clonedCard) {
                             clonedCard.style.setProperty('--theme', state.theme);
-                            clonedCard.style.visibility = 'visible';
-                            clonedCard.style.opacity = '1';
-                            clonedCard.style.display = 'block';
                             
-                            // 為大字報款式強制注入所有樣式
+                            // Specific fix for Poster Style to enforce contrast
                             if (state.style === 'poster') {
-                                // 修復大字報背景色
                                 clonedCard.style.backgroundColor = '#FFD700';
-                                
-                                // 修復標題區塊
-                                const bigTitles = clonedCard.querySelectorAll('.big-title');
-                                bigTitles.forEach(el => {
+                                clonedCard.querySelectorAll('.big-title, .content-box').forEach(el => {
                                     el.style.backgroundColor = '#ffffff';
                                     el.style.color = '#000000';
-                                    el.style.border = '8px solid #000000';
-                                    el.style.boxShadow = '15px 15px 0px #000000';
-                                    el.style.fontWeight = '900';
-                                    el.style.fontFamily = "'Noto Sans SC', sans-serif";
-                                });
-                                
-                                // 修復內容區塊
-                                const contentBoxes = clonedCard.querySelectorAll('.content-box');
-                                contentBoxes.forEach(el => {
-                                    el.style.backgroundColor = '#ffffff';
-                                    el.style.color = '#000000';
-                                    el.style.border = '4px solid #000000';
-                                    el.style.boxShadow = '10px 10px 0px #000000';
-                                    el.style.fontWeight = 'bold';
-                                    el.style.fontFamily = "'Noto Sans SC', sans-serif";
-                                });
-                                
-                                // 修復其他文本元素
-                                clonedCard.querySelectorAll('h1, h2, h3, p, div, span').forEach(el => {
-                                    if (!el.closest('.big-title') && !el.closest('.content-box')) {
-                                        if (window.getComputedStyle(el).color === 'rgb(0, 0, 0)' || 
-                                            el.textContent.trim().length > 0) {
-                                            el.style.color = '#000000';
-                                        }
-                                    }
+                                    el.style.border = (el.classList.contains('big-title') ? '8px' : '4px') + ' solid #000000';
+                                    el.style.boxShadow = (el.classList.contains('big-title') ? '15px 15px 0px' : '10px 10px 0px') + ' #000000';
                                 });
                             }
                             
-                            // 確保所有文本可見
+                            // Visibility fix
                             clonedCard.querySelectorAll('*').forEach(el => {
                                 const computed = window.getComputedStyle(el);
-                                if (computed.color === 'rgba(0, 0, 0, 0)' || 
-                                    computed.color === 'transparent' ||
-                                    computed.opacity === '0') {
-                                    el.style.color = textColor;
-                                    el.style.opacity = '1';
-                                }
+                                if (computed.opacity === '0') el.style.opacity = '1';
                             });
                         }
                     }
@@ -573,6 +692,7 @@
                 zip.file(`HD_Post_${i+1}.png`, blob);
             }
             
+            prog.innerText = "Compressing ZIP...";
             const final = await zip.generateAsync({type: 'blob'});
             saveAs(final, `VisualClone_HD_Export_${Date.now()}.zip`);
             overlay.style.display = 'none';
