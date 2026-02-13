@@ -1,313 +1,969 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visual Clone Pro Suite</title>
-    
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Visual Clone Pro Suite v14 (Render Fix & Footer)</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;700;900&family=Noto+Serif+SC:wght@400;700&family=ZCOOL+KuaiLe&display=swap');
-        
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@300;500;700;900&family=Zen+Maru+Gothic:wght@300;400;500;700;900&display=swap');
+
         :root {
+            /* JS 將根據 APP_CONFIG 更新這些變數 */
             --canvas-w: 1080px;
             --canvas-h: 1350px;
-            --header-h: 120px;
-            --footer-h: 60px;
-            --content-h: 1170px;
-            --preview-scale: 0.35; 
+            --header-h: 140px;
+            --footer-h: -30px;
+            --content-h: 1110px;
+            --preview-scale: 0.35;
         }
 
         body {
-            font-family: 'Inter', 'Noto Sans SC', sans-serif;
-            background-color: #f1f5f9;
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc;
             height: 100vh;
+            height: 100dvh;
             overflow: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
-        .sidebar-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
 
-        /* --- Base Canvas Styles --- */
-        .card-container, .merger-container {
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        /* --- Canvas Layout --- */
+        .card-wrapper {
+            position: relative;
+            margin-bottom: 24px;
+            width: calc(var(--canvas-w) * var(--preview-scale));
+            height: calc(var(--canvas-h) * var(--preview-scale));
+            transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            flex-shrink: 0;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .card-container {
             width: var(--canvas-w);
             height: var(--canvas-h);
             background-color: white;
-            position: relative;
+            position: absolute;
+            top: 0;
+            left: 0;
             overflow: hidden;
-            flex-shrink: 0;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.12);
-            transform: scale(var(--preview-scale));
-            transform-origin: top center;
-            margin-bottom: calc(var(--canvas-h) * (var(--preview-scale) - 1) + 30px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
+            transform: scale(var(--preview-scale));
+            transform-origin: top left;
+            cursor: pointer;
+            border-radius: 0px;
         }
 
-        /* --- Mode 1: Generator Areas --- */
-        .area-header { position: absolute; top: 0; left: 0; width: 100%; height: var(--header-h); z-index: 100; pointer-events: none; }
-        .area-footer { position: absolute; bottom: 0; left: 0; width: 100%; height: var(--footer-h); z-index: 100; pointer-events: none; display: flex; align-items: center; justify-content: center; }
-        .area-content { position: absolute; top: var(--header-h); left: 0; width: 100%; height: var(--content-h); padding: 60px 80px; box-sizing: border-box; z-index: 10; overflow: hidden; }
-
-        /* --- Mode 2: Merger Specific Styles --- */
-        .merger-bg-img {
-            position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;
+        .card-wrapper.selected {
+            transform: scale(1.02);
+            z-index: 10;
         }
-        .merger-overlay-viewport {
+
+        .card-wrapper.selected .card-container {
+            box-shadow: 0 0 0 4px #f43f5e, 0 20px 40px rgba(244, 63, 94, 0.2);
+        }
+
+        .area-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: var(--header-h);
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .area-footer {
+            position: absolute;
+            bottom: -20px;
+            left: 0;
+            width: 100%;
+            height: var(--footer-h);
+            z-index: 100;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .area-content {
             position: absolute;
             top: var(--header-h);
             left: 0;
             width: 100%;
             height: var(--content-h);
+            padding: 20px 90px;
+            box-sizing: border-box;
+            z-index: 10;
             overflow: hidden;
-            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
-        .merger-overlay-img {
+
+        /* --- Footer Styles --- */
+        .footer-pill {
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 10px 32px;
+            border-radius: 100px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            font-weight: 700;
+            color: #475569;
+            font-size: 22px;
+            letter-spacing: 1px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* 關鍵更新：恢復 Simple Footer 顯示 */
+        .footer-simple {
+            color: #94a3b8;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            font-family: 'Noto Sans TC', sans-serif;
+            /* 移除了隱藏屬性，現在會正常顯示 */
+        }
+
+        /* --- Markdown Styles (Whitespace Preserved) --- */
+        .md-content h1 {
+            font-size: 64px;
+            font-weight: 900;
+            line-height: 1.2;
+            margin-bottom: 24px;
+            white-space: pre-wrap;
+        }
+
+        .md-content h2 {
+            font-size: 56px;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 20px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+        }
+
+        .md-content h3 {
+            font-size: 48px;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 16px;
+            white-space: pre-wrap;
+        }
+
+        .md-content p {
+            font-size: 36px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            white-space: pre-wrap;
+        }
+
+        .md-content ul {
+            list-style-type: disc;
+            padding-left: 1.2em;
+            margin-bottom: 24px;
+        }
+
+        .md-content ol {
+            list-style-type: decimal;
+            padding-left: 1.2em;
+            margin-bottom: 24px;
+        }
+
+        .md-content li {
+            font-size: 36px;
+            line-height: 1.6;
+            margin-bottom: 12px;
+            white-space: pre-wrap;
+        }
+
+        .md-content blockquote {
+            border-left: 8px solid #cbd5e1;
+            padding-left: 24px;
+            font-style: italic;
+            opacity: 0.8;
+            margin-bottom: 24px;
+            white-space: pre-wrap;
+        }
+
+        .md-content strong {
+            font-weight: 900;
+            color: inherit;
+        }
+
+        .md-content code {
+            background: rgba(0, 0, 0, 0.08);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+        }
+
+        /* --- Styles Definition --- */
+        .style-minimal {
+            font-family: 'Noto Sans TC';
+            background: #fff;
+            color: #1e293b;
+        }
+
+        .style-minimal .min-line {
+            width: 60px;
+            height: 6px;
+            background: #0f172a;
+            margin: 40px 0;
+            border-radius: 10px;
+        }
+
+        .style-poster {
+            font-family: 'Noto Sans TC';
+            background: #FCD34D;
+            color: #fff;
+        }
+
+        .style-poster .poster-box {
+            background: #1e293b;
+            color: #fff !important;
+            padding: 40px 50px;
             width: 100%;
-            height: auto;
-            display: block;
+            box-shadow: 20px 20px 0px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 1;
         }
 
-        /* --- Styles: Minimal --- */
-        .style-minimal { font-family: 'Noto Serif SC', serif; background-color: #fdfdfd; color: #333; }
-        .style-minimal .accent-line { width: 80px; height: 4px; background: #333; margin: 40px 0; }
-        
-        /* --- Styles: Poster --- */
-        .style-poster { font-family: 'Noto Sans SC', sans-serif; background-color: #FFD700; color: #000; }
-        .style-poster .big-title { font-weight: 900; line-height: 1.1; text-transform: uppercase; border: 8px solid #000; padding: 25px; background: #fff; box-shadow: 15px 15px 0px #000; color: #000; }
-        .style-poster .content-box { background: #fff; border: 4px solid #000; padding: 30px; box-shadow: 10px 10px 0px #000; color: #000; }
+        .style-poster .poster-box h1,
+        .style-poster .poster-box h2 {
+            color: #FCD34D !important;
+        }
 
-        /* --- Styles: Memo --- */
-        .style-memo { font-family: 'Courier New', Courier, monospace; background-color: #fff9c4; color: #4a4a4a; background-image: linear-gradient(#e1e1e1 2px, transparent 2px); background-size: 100% 3rem; }
-        .style-memo .tape { width: 200px; height: 60px; background: rgba(254, 240, 138, 0.7); transform: rotate(-3deg); position: absolute; top: -30px; left: 50%; margin-left: -100px; z-index: 5; }
-        
-        /* --- Styles: Journal --- */
-        .style-journal { font-family: 'ZCOOL KuaiLe', cursive; background-color: #FFF0F5; color: #5D4037; background-image: radial-gradient(#FFB6C1 2px, transparent 2px); background-size: 40px 40px; }
-        .style-journal .journal-card { border: 6px dashed #f9a8d4; border-radius: 60px; background: rgba(255,255,255,0.85); padding: 40px; }
-        
-        /* --- Styles: Dry --- */
-        .style-dry { font-family: 'Noto Sans SC', sans-serif; background-color: #1e293b; color: #f8fafc; }
-        .style-dry .glass-card { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); border: 2px solid rgba(255,255,255,0.2); border-radius: 30px; padding: 40px; }
-        .style-dry .num-badge { background: #38bdf8; color: #0f172a; font-weight: 900; border-radius: 50%; width: 50px; height: 50px; display: inline-flex; align-items: center; justify-content: center; margin-right: 20px; font-size: 28px; }
+        .style-memo {
+            font-family: 'Noto Sans TC';
+            background: #fffbeb;
+            color: #4b5563;
+            background-image: linear-gradient(#e5e7eb 1px, transparent 1px), linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .style-memo .sticky-note {
+            background: #fef3c7;
+            padding: 40px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transform: rotate(-1deg);
+            border-radius: 2px;
+            color: #451a03;
+            margin-bottom: 30px;
+        }
+
+        .style-journal {
+            font-family: 'Zen Maru Gothic';
+            background: #fff1f2;
+            color: #881337;
+        }
+
+        .style-journal .journal-card {
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px dashed #f43f5e;
+            border-radius: 40px;
+            padding: 40px;
+            margin-bottom: 24px;
+        }
+
+        .style-glass {
+            font-family: 'Noto Sans TC';
+            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+            color: #1e293b;
+        }
+
+        .style-glass .glass-panel {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(40px);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            padding: 40px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+            margin-bottom: 24px;
+        }
+
+        .style-cyber {
+            font-family: 'Noto Sans TC';
+            background: #fff;
+            color: #334155;
+            overflow: hidden;
+        }
+
+        .style-cyber::before {
+            content: "";
+            position: absolute;
+            top: -20%;
+            right: -20%;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, #fbcfe8 0%, transparent 70%);
+            opacity: 0.8;
+            z-index: 0;
+        }
+
+        .style-cyber .aura-box {
+            position: relative;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            padding: 40px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            margin-bottom: 24px;
+        }
+
+        .style-luxury {
+            font-family: 'Noto Serif TC';
+            background: #f8fafc;
+            color: #1e293b;
+        }
+
+        .style-luxury .mag-line {
+            width: 100%;
+            height: 1px;
+            background: #94a3b8;
+            margin: 30px 0;
+        }
+
+        .style-luxury h1,
+        .style-luxury h2 {
+            font-style: italic;
+        }
+
+        .style-pop {
+            font-family: 'Noto Sans TC';
+            background: #ffedd5;
+            color: #1e293b;
+        }
+
+        .style-pop .pop-card {
+            background: #fff;
+            border: 3px solid #000;
+            box-shadow: 12px 12px 0 #fb923c;
+            padding: 40px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+        }
+
+        .style-dry {
+            font-family: 'Noto Sans TC';
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .style-dry .floating-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 24px;
+        }
+
+        .style-paper {
+            font-family: 'Noto Serif TC';
+            background: #fdf6e3;
+            color: #433422;
+        }
+
+        .style-paper .paper-sheet {
+            background: #fff;
+            padding: 50px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border-radius: 2px;
+            margin-bottom: 24px;
+        }
+
+        .style-solid {
+            font-family: 'Noto Sans TC';
+            background: var(--theme);
+            color: white;
+        }
+
+        .style-solid .solid-content {
+            border-left: 6px solid rgba(255, 255, 255, 0.4);
+            padding-left: 40px;
+            margin-bottom: 30px;
+        }
+
+        .style-brutal {
+            font-family: 'Noto Sans TC';
+            background: #fff;
+            color: #000;
+        }
+
+        .style-brutal .outline-box {
+            border: 3px solid #000;
+            padding: 30px;
+            border-radius: 24px;
+            background: #fff;
+            margin-bottom: 24px;
+        }
+
+        .style-retro {
+            font-family: 'Noto Serif TC';
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+
+        .style-retro .film-frame {
+            background: #fff;
+            padding: 60px 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            border: 1px solid #cbd5e1;
+        }
+
+        .style-dark {
+            font-family: 'Noto Sans TC';
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .style-dark .dark-card {
+            background: #1e293b;
+            border-radius: 20px;
+            padding: 40px;
+            border: 1px solid #334155;
+            margin-bottom: 24px;
+        }
+
+        .style-comic {
+            font-family: 'Zen Maru Gothic';
+            background: #fff;
+            color: #333;
+            background-image: radial-gradient(#e2e8f0 2px, transparent 2px);
+            background-size: 20px 20px;
+        }
+
+        .style-comic .doodle-box {
+            border: 3px solid #333;
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+            padding: 40px;
+            background: #fff;
+            margin-bottom: 30px;
+        }
+
+        .style-elegant {
+            font-family: 'Noto Sans TC';
+            background: #fafafa;
+            color: #525252;
+        }
+
+        .style-elegant .air-box {
+            padding: 30px 0;
+            border-left: 2px solid #d4d4d4;
+            padding-left: 40px;
+            margin-bottom: 20px;
+        }
+
+        .style-playful {
+            font-family: 'Zen Maru Gothic';
+            background: #fff7ed;
+            color: #7c2d12;
+        }
+
+        .style-playful .soft-blob {
+            background: #ffedd5;
+            border-radius: 30px;
+            padding: 40px;
+            margin-bottom: 24px;
+        }
+
+        .style-tech {
+            font-family: 'Noto Sans TC';
+            background: #f8fafc;
+            color: #334155;
+        }
+
+        .style-tech .tech-card {
+            border-left: 6px solid var(--theme);
+            background: white;
+            padding: 40px;
+            border-radius: 0 16px 16px 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 24px;
+        }
+
+        .style-ink {
+            font-family: 'Noto Serif TC';
+            background: #f5f5f4;
+            color: #44403c;
+        }
+
+        .style-ink .zen-circle {
+            border: 1px solid #a8a29e;
+            border-radius: 50%;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 40px;
+            color: #d6d3d1;
+        }
+
+        .style-ink .ink-content {
+            border-left: 4px solid #d6d3d1;
+            padding-left: 30px;
+            margin-bottom: 30px;
+        }
+
+        .style-boxy {
+            font-family: 'Noto Sans TC';
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .style-boxy .grid-unit {
+            background: #fff;
+            padding: 36px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .style-frame {
+            font-family: 'Noto Serif TC';
+            background: #f8fafc;
+            color: #334155;
+        }
+
+        .style-frame .frame-border {
+            border: 4px double #94a3b8;
+            height: 100%;
+            padding: 50px 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: #fff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
 
         /* IP Layer */
-        .ip-layer { position: absolute; inset: 0; z-index: 200; pointer-events: none; background: transparent; }
-        .draggable-ip { 
-            position: absolute; 
-            width: 320px; 
-            height: auto; 
-            cursor: grab; 
-            pointer-events: auto; 
+        .ip-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 200;
+            pointer-events: none;
+        }
+
+        .draggable-ip {
+            position: absolute;
+            width: 250px;
+            height: auto;
+            cursor: grab;
+            pointer-events: auto;
             user-select: none;
             will-change: transform;
+            filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15));
         }
-        .draggable-ip:active { cursor: grabbing; }
 
-        .footer-content-blur { background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 10px 50px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .draggable-ip:active {
+            cursor: grabbing;
+            transform: scale(1.05);
+        }
 
-        #export-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white; }
-        
-        /* Tab State Styles */
-        .nav-btn.active { background-color: rgb(241, 245, 249); color: rgb(15, 23, 42); }
-        .nav-btn { color: rgb(100, 116, 139); }
+        .draggable-ip:hover {
+            border: 2px dashed rgba(244, 63, 94, 0.5);
+        }
+
+        #export-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.95);
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .nav-btn.active {
+            background-color: rgb(241, 245, 249);
+            color: rgb(15, 23, 42);
+        }
+
+        .nav-btn {
+            color: rgb(100, 116, 139);
+        }
+
+        .char-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .char-item {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            transition: all 0.2s;
+        }
+
+        .char-item:hover {
+            border-color: #f43f5e;
+            background-color: #fff1f2;
+            transform: translateY(-2px);
+        }
+
+        .char-item img {
+            width: 70%;
+            height: 70%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            #preview-section {
+                flex: 0 0 38% !important;
+                min-height: 0;
+            }
+        }
+
+        /* Nav controls for merger */
+        .merger-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(4px);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            z-index: 50;
+            color: #475569;
+            transition: all 0.2s;
+        }
+
+        .merger-nav-btn:hover {
+            background: white;
+            color: #0f172a;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .merger-nav-btn.disabled {
+            opacity: 0.3;
+            pointer-events: none;
+        }
     </style>
 </head>
-<body class="flex flex-col">
 
-    <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-50">
-        <div class="flex items-center gap-6">
+<body class="bg-slate-50">
+
+    <header
+        class="shrink-0 h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 z-50">
+        <div class="flex items-center gap-4">
             <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-rose-500 rounded-lg flex items-center justify-center text-white shadow-sm shadow-rose-200">
+                <div
+                    class="w-8 h-8 bg-rose-500 rounded-lg flex items-center justify-center text-white shadow-sm shadow-rose-200">
                     <i data-lucide="layers" size="18"></i>
                 </div>
-                <h1 class="text-xl font-bold tracking-tight text-slate-800">Visual <span class="text-rose-500">Suite</span></h1>
+                <h1 class="text-lg font-bold tracking-tight text-slate-800 hidden md:block">Visual <span
+                        class="text-rose-500">Suite v14</span></h1>
             </div>
 
             <div class="flex bg-slate-100 p-1 rounded-lg">
-                <button onclick="switchMode('gen')" id="nav-gen" class="nav-btn active px-4 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2">
-                    <i data-lucide="pen-tool" size="14"></i> Generative Card
+                <button onclick="switchMode('gen')" id="nav-gen"
+                    class="nav-btn active px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2">
+                    <i data-lucide="pen-tool" size="14"></i> <span class="hidden md:inline">卡片</span>
                 </button>
-                <button onclick="switchMode('merge')" id="nav-merge" class="nav-btn px-4 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2">
-                    <i data-lucide="scissors" size="14"></i> Image Merger
+                <button onclick="switchMode('merge')" id="nav-merge"
+                    class="nav-btn px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2">
+                    <i data-lucide="scissors" size="14"></i> <span class="hidden md:inline">拼接</span>
                 </button>
             </div>
         </div>
 
-        <button onclick="handleExport()" id="export-btn" class="bg-rose-500 hover:bg-rose-600 text-white px-6 py-2 rounded-full font-bold flex items-center gap-2 transition-all shadow-lg shadow-rose-200 active:scale-95">
-            <i data-lucide="download" size="18"></i> <span>Download ZIP</span>
+        <button onclick="handleExport()" id="export-btn"
+            class="bg-rose-500 hover:bg-rose-600 text-white px-4 md:px-6 py-1.5 rounded-full font-bold flex items-center gap-2 transition-all shadow-lg shadow-rose-200 active:scale-95 text-xs md:text-sm">
+            <i data-lucide="download" size="14"></i> <span id="dl-text">下載</span>
         </button>
     </header>
 
-    <main class="flex flex-1 overflow-hidden">
-        <aside class="w-[420px] bg-white border-r border-slate-200 flex flex-col sidebar-scroll overflow-y-auto">
-            
-            <div id="sidebar-gen" class="p-6 space-y-8">
-                <section class="space-y-4">
-                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">1. 款式切換 (Styles)</h3>
-                    <div class="grid grid-cols-3 gap-2" id="style-selector"></div>
-                </section>
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden h-full min-h-0">
 
-                <section class="space-y-4">
-                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">2. 視覺資產上傳</h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <label class="border-2 border-dashed border-slate-200 rounded-xl h-24 flex flex-col items-center justify-center cursor-pointer hover:bg-rose-50 transition-all">
-                            <i data-lucide="image" class="text-slate-400 mb-1"></i>
-                            <span class="text-[10px] text-slate-500 font-bold">上傳底圖 (Frame)</span>
-                            <input type="file" class="hidden" accept="image/*" onchange="handleImgUpload(event, 'base')">
-                        </label>
-                        <label class="border-2 border-dashed border-slate-200 rounded-xl h-24 flex flex-col items-center justify-center cursor-pointer hover:bg-rose-50 transition-all">
-                            <i data-lucide="smile" class="text-slate-400 mb-1"></i>
-                            <span class="text-[10px] text-slate-500 font-bold">上傳角色 (PNG)</span>
-                            <input type="file" class="hidden" accept="image/*" onchange="handleImgUpload(event, 'ip')">
-                        </label>
-                    </div>
-                </section>
+        <!-- Preview Section -->
+        <section id="preview-section"
+            class="order-1 md:order-2 shrink-0 h-[38%] md:h-full md:flex-1 bg-slate-100 overflow-hidden flex flex-col relative border-b md:border-b-0 shadow-inner"
+            style="flex: 0 0 38%; md:flex:1 1 0%;">
+            <div
+                class="mb-4 flex items-center gap-4 text-slate-400 bg-white px-4 py-1.5 rounded-full shadow-sm sticky top-4 z-30 opacity-80 md:opacity-100 scale-90 md:scale-100 origin-top mx-auto">
+                <i data-lucide="mouse-pointer-2" size="14"></i>
+                <span class="text-xs font-bold uppercase tracking-tighter" id="preview-title">預覽區</span>
+            </div>
 
-                <section class="space-y-4">
-                    <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">3. 內容動態編輯</h3>
-                    <div class="space-y-4">
-                        <input type="text" id="in-title" class="w-full border border-slate-200 rounded-lg p-3 font-bold focus:ring-2 focus:ring-rose-500 outline-none" placeholder="封面大標題">
-                        <input type="text" id="in-author" class="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-rose-500 outline-none" placeholder="署名 / 帳號">
-                        <textarea id="in-content" rows="10" class="w-full border border-slate-200 rounded-lg p-3 text-sm leading-relaxed focus:ring-2 focus:ring-rose-500 outline-none resize-none" placeholder="正文內容"></textarea>
-                        
-                        <div class="space-y-3">
-                             <input type="text" id="in-ad" class="w-full border border-slate-200 rounded-lg p-3 text-sm italic focus:ring-2 focus:ring-rose-500 outline-none" placeholder="底部推廣語">
-                             <div class="flex items-center gap-2 px-1">
-                                <input type="checkbox" id="check-pagenum" class="w-4 h-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer">
-                                <label for="check-pagenum" class="text-xs font-bold text-slate-600 cursor-pointer">顯示頁數</label>
-                             </div>
+            <div id="canvas-wrapper"
+                class="flex-1 w-full overflow-y-auto custom-scroll p-4 pb-12 flex flex-col items-center min-h-0"></div>
+
+            <div id="merger-wrapper" class="hidden flex-1 w-full h-full relative">
+                <div id="merge-prev" class="merger-nav-btn left-4 hidden" onclick="changeMergeSlide(-1)"><i
+                        data-lucide="chevron-left" size="24"></i></div>
+                <div id="merge-next" class="merger-nav-btn right-4 hidden" onclick="changeMergeSlide(1)"><i
+                        data-lucide="chevron-right" size="24"></i></div>
+
+                <div class="w-full h-full overflow-y-auto custom-scroll p-4 pb-12 flex flex-col items-center min-h-0">
+                    <div class="card-wrapper" style="margin-top: 0;">
+                        <!-- Image container for merger -->
+                        <div id="merger-card" class="card-container">
+                            <!-- Background Element (CSS based) -->
+                            <div id="merge-bg-el" class="absolute inset-0 w-full h-full hidden"
+                                style="background-size: cover; background-position: center;"></div>
+                            <div class="absolute top-[120px] bottom-[60px] left-0 w-full overflow-hidden z-10">
+                                <img id="merge-overlay-el" class="w-full h-auto hidden" />
+                            </div>
                         </div>
                     </div>
-                </section>
-
-                <section class="space-y-4">
-                    <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">4. 視覺主色 (Theme Color)</h3>
-                    <div id="theme-box" class="flex gap-3"></div>
-                </section>
+                </div>
             </div>
-
-            <div id="sidebar-merge" class="p-6 space-y-8 hidden">
-                <section class="space-y-4">
-                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Image Combination</h3>
-                    
-                    <div class="space-y-6">
-                        <div>
-                            <label class="block text-sm font-bold mb-2 text-slate-700">1. Background Image</label>
-                            <label class="border-2 border-dashed border-slate-200 rounded-xl h-32 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-50 transition-all bg-slate-50">
-                                <i data-lucide="monitor" class="text-slate-400 mb-2"></i>
-                                <span class="text-xs text-slate-500">1080 x 1350px</span>
-                                <input type="file" class="hidden" accept="image/*" onchange="handleMergerUpload(event, 'bg')">
-                            </label>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-bold mb-2 text-slate-700">2. Content Overlay</label>
-                            <label class="border-2 border-dashed border-slate-200 rounded-xl h-32 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-50 transition-all bg-slate-50">
-                                <i data-lucide="layers" class="text-slate-400 mb-2"></i>
-                                <span class="text-xs text-slate-500">Scrollable Content</span>
-                                <input type="file" class="hidden" accept="image/*" onchange="handleMergerUpload(event, 'overlay')">
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="bg-amber-50 border border-amber-200 p-4 rounded-lg text-amber-800 text-xs leading-relaxed">
-                        <p class="font-bold mb-1">Clipping Logic:</p>
-                        <ul class="list-disc pl-4 space-y-1">
-                            <li>Overlay starts at <b>120px</b> (Header space).</li>
-                            <li>Footer space <b>60px</b> is preserved from BG.</li>
-                            <li>Visible Overlay Height: <b>1170px</b>.</li>
-                            <li>Excess content is clipped.</li>
-                        </ul>
-                    </div>
-                </section>
-            </div>
-
-        </aside>
-
-        <section class="flex-1 overflow-y-auto p-12 bg-slate-50 flex flex-col items-center custom-scroll" id="preview-section">
-            <div class="mb-8 flex items-center gap-4 text-slate-400 bg-white px-6 py-2 rounded-full shadow-sm">
-                <i data-lucide="eye" size="18"></i>
-                <span class="text-sm font-bold uppercase tracking-tighter">HD Preview • 1080 x 1350</span>
-            </div>
-
-            <div id="canvas-wrapper" class="flex flex-col items-center"></div>
-
-            <div id="merger-wrapper" class="hidden">
-                 <div id="merger-card" class="merger-container bg-white">
-                    <img id="merge-bg-el" class="merger-bg-img hidden" />
-
-                    <div class="area-header"></div>
-
-                    <div class="merger-overlay-viewport">
-                        <img id="merge-overlay-el" class="merger-overlay-img hidden" />
-                    </div>
-
-                    <div class="area-footer"></div>
-                 </div>
-            </div>
-
         </section>
+
+        <!-- Sidebar -->
+        <aside
+            class="order-2 md:order-1 flex-1 md:flex-none md:w-[420px] bg-white border-r border-slate-200 flex flex-col overflow-hidden z-20 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] md:shadow-none min-h-0">
+            <div class="flex-1 overflow-y-auto p-5 pb-10 md:pb-6 custom-scroll min-h-0"
+                style="padding-bottom: env(safe-area-inset-bottom);">
+
+                <div id="sidebar-gen" class="space-y-6 pb-8">
+                    <section class="space-y-3">
+                        <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">1. 風格選擇</h3>
+                        <div class="grid grid-cols-4 gap-2" id="style-selector"></div>
+                    </section>
+                    <section class="space-y-3">
+                        <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">2. 素材設定</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label
+                                class="border border-slate-200 rounded-lg p-3 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all bg-white h-20">
+                                <i data-lucide="image" class="text-slate-400 mb-1" size="16"></i>
+                                <span class="text-[10px] font-bold text-slate-600">背景圖</span>
+                                <input type="file" class="hidden" accept="image/*"
+                                    onchange="handleImgUpload(event, 'base')">
+                            </label>
+                            <label
+                                class="border border-slate-200 rounded-lg p-3 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all bg-white h-20">
+                                <i data-lucide="smile" class="text-slate-400 mb-1" size="16"></i>
+                                <span class="text-[10px] font-bold text-slate-600">貼紙</span>
+                                <input type="file" class="hidden" accept="image/*"
+                                    onchange="handleImgUpload(event, 'ip')">
+                            </label>
+                        </div>
+                        <div class="flex items-center gap-2 px-1">
+                            <input type="checkbox" id="check-default-bg"
+                                class="w-4 h-4 rounded text-rose-600 focus:ring-rose-500">
+                            <label for="check-default-bg" class="text-xs text-slate-500 font-bold">使用默認背景
+                                (Base64)</label>
+                        </div>
+                        <div class="char-grid pt-2" id="default-chars"></div>
+                    </section>
+                    <section class="space-y-3">
+                        <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">3. 內容文案</h3>
+                        <input type="text" id="in-title"
+                            class="w-full border border-slate-200 rounded-lg p-3 font-bold focus:ring-2 focus:ring-rose-500 outline-none text-slate-700 text-sm"
+                            placeholder="封面標題">
+                        <input type="text" id="in-author"
+                            class="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-rose-500 outline-none text-slate-600"
+                            placeholder="署名 / IG">
+                        <textarea id="in-content" rows="6"
+                            class="w-full border border-slate-200 rounded-lg p-3 text-sm leading-relaxed focus:ring-2 focus:ring-rose-500 outline-none resize-none text-slate-600"
+                            placeholder="內容 (Markdown 支援)"></textarea>
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-2">
+                            <span class="text-xs font-bold text-slate-500">頁尾模式</span>
+                            <div class="flex items-center gap-3">
+                                <label class="flex items-center gap-1"><input type="radio" name="footer-mode"
+                                        value="pagenum" class="text-rose-600"><span class="text-xs">頁碼</span></label>
+                                <label class="flex items-center gap-1"><input type="radio" name="footer-mode"
+                                        value="text" class="text-rose-600"><span class="text-xs">文字</span></label>
+                                <label class="flex items-center gap-1"><input type="radio" name="footer-mode"
+                                        value="none" class="text-rose-600"><span class="text-xs">無</span></label>
+                            </div>
+                            <input type="text" id="in-ad"
+                                class="w-full border border-slate-200 rounded p-2 text-xs hidden"
+                                placeholder="輸入推廣語...">
+                        </div>
+                    </section>
+                    <section class="space-y-3">
+                        <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">4. 主題色</h3>
+                        <div id="theme-box" class="flex gap-3 overflow-x-auto pb-2"></div>
+                    </section>
+                </div>
+
+                <div id="sidebar-merge" class="space-y-6 hidden pb-8">
+                    <section class="space-y-4">
+                        <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">長圖拼接 (Batch Merger)</h3>
+                        <div class="flex items-center gap-2 mb-2">
+                            <input type="checkbox" id="check-merger-default-bg" class="w-4 h-4 rounded text-rose-600">
+                            <label for="check-merger-default-bg" class="text-xs font-bold text-slate-600">使用默認背景</label>
+                        </div>
+                        <label
+                            class="block border-2 border-dashed border-slate-200 rounded-xl p-4 text-center cursor-pointer hover:bg-blue-50">
+                            <span class="text-xs font-bold block text-slate-500">上傳背景 (Base)</span>
+                            <input type="file" class="hidden" onchange="handleMergerUpload(event, 'bg')">
+                        </label>
+
+                        <label
+                            class="block border-2 border-dashed border-slate-200 rounded-xl p-4 text-center cursor-pointer hover:bg-blue-50 relative group">
+                            <div
+                                class="absolute inset-0 bg-blue-100 opacity-0 group-hover:opacity-20 transition-opacity rounded-xl">
+                            </div>
+                            <i data-lucide="files" class="mx-auto mb-2 text-blue-400"></i>
+                            <span class="text-xs font-bold block text-slate-600">批量上傳長圖 (Overlays)</span>
+                            <span class="text-[10px] text-slate-400 block mt-1">支援多選，一次生成</span>
+                            <input type="file" class="hidden" multiple onchange="handleMergerUpload(event, 'overlay')">
+                        </label>
+
+                        <div class="bg-blue-50 p-4 rounded-lg text-xs text-blue-800 leading-relaxed">
+                            <p>💡 <b>提示：</b></p>
+                            <ul class="list-disc pl-4 mt-1 space-y-1">
+                                <li>可一次選取多張長截圖。</li>
+                                <li>所有圖片將套用同一張背景圖。</li>
+                                <li>點擊「下載」將自動打包所有拼接結果為 ZIP。</li>
+                            </ul>
+                        </div>
+                    </section>
+                </div>
+
+            </div>
+        </aside>
     </main>
 
     <div id="export-overlay">
         <div class="animate-spin text-rose-400 mb-6"><i data-lucide="refresh-cw" size="64"></i></div>
-        <h2 class="text-3xl font-black mb-2 tracking-tighter uppercase">Rendering Assets</h2>
-        <p class="text-slate-400 font-mono" id="progress-val">Processing...</p>
+        <h2 class="text-2xl font-black mb-2 tracking-tighter uppercase text-center">處理中...</h2>
+        <p class="text-slate-400 font-mono" id="progress-val">Initializing...</p>
     </div>
 
-    <div id="measurer" style="position:absolute; visibility:hidden; width:920px; font-size:40px; line-height:1.6;"></div>
+    <div id="measurer" class="md-content"
+        style="position:absolute; visibility:hidden; width:900px; font-size:36px; line-height:1.6;"></div>
 
     <script>
-        // --- State ---
-        const state = {
-            mode: 'gen', // 'gen' or 'merge'
-            // Gen Mode Data
-            title: "2024年必須掌握的\n前端視覺開發技巧",
-            author: "@VisualCloneLab",
-            content: `1. 掌握色彩心理學\n色彩不僅是裝飾，它能直接影響用戶的情緒。暖色調傳遞活力，冷色調傳遞專業。\n\n2. 留白的藝術\n不要填滿每一個角落。適當的留白能讓設計呼吸，引導視線聚焦核心內容。\n\n3. 字體層級關係\n通過字號、字重、顏色深淺建立清晰的信息層級。標題要大，正文要易讀。\n\n4. 微交互動畫\n添加細微的 Hover 效果或點擊回饋，能極大提升產品的精緻感和用戶體驗。\n\n5. 響應式思維\n設計不應只針對單一螢幕。思考內容在不同尺寸下如何流佈局，是現代前端的基礎。`,
-            adText: "點讚 + 收藏，獲取更多源碼資源 ✨",
-            showPageNum: true,
-            theme: "#f43f5e",
-            style: "minimal",
-            baseImg: null,
-            ipImg: null,
-            previewScale: 0.35,
-            // Merger Mode Data
-            mergeBg: null,
-            mergeOverlay: null
+        // --- APP CONFIGURATION ---
+        const APP_CONFIG = {
+            width: 1080,
+            height: 1350,
+            headerHeight: 120,
+            footerHeight: 60,
+            contentPadding: 60,
+            bgUrl: 'frame.jpg'
         };
 
+        const root = document.documentElement;
+        root.style.setProperty('--canvas-w', APP_CONFIG.width + 'px');
+        root.style.setProperty('--canvas-h', APP_CONFIG.height + 'px');
+        root.style.setProperty('--header-h', APP_CONFIG.headerHeight + 'px');
+        root.style.setProperty('--footer-h', APP_CONFIG.footerHeight + 'px');
+        const contentH = APP_CONFIG.height - APP_CONFIG.headerHeight - APP_CONFIG.footerHeight - 20;
+        root.style.setProperty('--content-h', contentH + 'px');
+
+        const DEFAULT_CHARS = [
+            "character/Gemini_Generated_Image_3x0vqz3x0vqz3x0v.png",
+            "character/Gemini_Generated_Image_4uls0l4uls0l4uls.png",
+            "character/Gemini_Generated_Image_8qhruu8qhruu8qhr.png",
+            "character/Gemini_Generated_Image_bbdxj2bbdxj2bbdx.png",
+            "character/Gemini_Generated_Image_ff9o3bff9o3bff9o.png",
+            "character/Gemini_Generated_Image_fylmi8fylmi8fylm.png",
+            "character/Gemini_Generated_Image_ge2lclge2lclge2l.png",
+            "character/Gemini_Generated_Image_je1w43je1w43je1w.png",
+            "character/Gemini_Generated_Image_nuxpt7nuxpt7nuxp.png",
+            "character/Gemini_Generated_Image_svegphsvegphsveg.png",
+            "character/Gemini_Generated_Image_tfcrmvtfcrmvtfrc.png",
+            "character/Gemini_Generated_Image_u6h6pcu6h6pcu6h6.png",
+            "character/Gemini_Generated_Image_uhtdwquhtdwquhtd.png"
+        ];
+
         const styleConfigs = [
-            { id: 'minimal', name: '簡約風', icon: 'monitor' },
-            { id: 'poster', name: '大字報', icon: 'megaphone' },
-            { id: 'memo', name: '備忘錄', icon: 'file-text' },
-            { id: 'journal', name: '手賬風', icon: 'scissors' },
-            { id: 'dry', name: '乾貨風', icon: 'book-open' }
+            { id: 'minimal', name: '極簡', icon: 'monitor' },
+            { id: 'poster', name: '焦點', icon: 'megaphone' },
+            { id: 'memo', name: '筆記', icon: 'file-text' },
+            { id: 'journal', name: '手賬', icon: 'scissors' },
+            { id: 'glass', name: '玻璃', icon: 'droplet' },
+            { id: 'cyber', name: '光感', icon: 'sun' },
+            { id: 'luxury', name: '雜誌', icon: 'book' },
+            { id: 'pop', name: '撞色', icon: 'zap' },
+            { id: 'dry', name: '卡片', icon: 'credit-card' },
+            { id: 'paper', name: '紙質', icon: 'newspaper' },
+            { id: 'solid', name: '純色', icon: 'layout' },
+            { id: 'brutal', name: '線框', icon: 'box' },
+            { id: 'retro', name: '膠片', icon: 'camera' },
+            { id: 'dark', name: '夜間', icon: 'moon' },
+            { id: 'comic', name: '塗鴉', icon: 'smile' },
+            { id: 'elegant', name: '純淨', icon: 'feather' },
+            { id: 'playful', name: '柔和', icon: 'heart' },
+            { id: 'tech', name: '現代', icon: 'cpu' },
+            { id: 'ink', name: '禪意', icon: 'pen-tool' },
+            { id: 'boxy', name: '方塊', icon: 'grid' },
+            { id: 'frame', name: '外框', icon: 'square' }
         ];
 
         const themes = ["#f43f5e", "#3b82f6", "#10b981", "#f59e0b", "#000000"];
 
-        // Dragging State
-        let dragTarget = null;
-        let startX, startY, initialX, initialY;
-        let isMoving = false;
+        const state = {
+            mode: 'gen',
+            title: "2024年必須掌握的\n前端視覺開發技巧",
+            author: "@VisualCloneLab",
+            content: `## 1. 掌握色彩心理學\n色彩不僅是裝飾，它能直接影響用戶的情緒。**暖色調**傳遞活力，*冷色調*傳遞專業。\n\n## 2. 留白的藝術\n> 留白不是空，而是設計的呼吸。\n\n不要填滿每一個角落。適當的留白能讓設計呼吸，引導視線聚焦核心內容。\n\n## 3. 關鍵清單\n- 字體層級關係\n- 微交互動畫\n- 響應式思維`,
+            footerMode: 'pagenum',
+            adText: "點讚 + 收藏 ✨",
+            theme: "#f43f5e",
+            style: "minimal",
+            useDefaultBg: false,
+            uploadedBaseImg: null,
+            selectedCardIndex: 0,
+            cardIcons: {},
+            useDefaultBgMerger: false,
+            mergeBg: null,
+            mergeOverlays: [],
+            currentMergeIndex: 0,
+            previewScale: 0.35
+        };
+
+        let dragTarget = null, startX, startY, initialLeft, initialTop;
 
         function init() {
             lucide.createIcons();
-            
-            // --- Init Gen Sidebar ---
+
             const sBox = document.getElementById('style-selector');
             styleConfigs.forEach(s => {
                 const btn = document.createElement('button');
                 btn.id = `btn-${s.id}`;
-                btn.className = `p-3 border rounded-xl flex flex-col items-center gap-1 transition-all ${state.style === s.id ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-200' : 'border-slate-200 hover:bg-slate-50'}`;
-                btn.innerHTML = `<i data-lucide="${s.icon}" size="18" class="${state.style === s.id ? 'text-rose-500' : 'text-slate-400'}"></i><span class="text-[10px] font-bold">${s.name}</span>`;
+                btn.className = `p-2 border rounded-lg flex flex-col items-center gap-1 transition-all ${state.style === s.id ? 'border-rose-500 bg-rose-50 ring-1 ring-rose-200' : 'border-slate-200 hover:bg-slate-50'}`;
+                btn.innerHTML = `<i data-lucide="${s.icon}" size="14" class="${state.style === s.id ? 'text-rose-500' : 'text-slate-400'}"></i><span class="text-[10px] font-bold whitespace-nowrap text-slate-600">${s.name}</span>`;
                 btn.onclick = () => switchStyle(s.id);
                 sBox.appendChild(btn);
             });
@@ -315,57 +971,77 @@
             const tBox = document.getElementById('theme-box');
             themes.forEach(c => {
                 const b = document.createElement('button');
-                b.className = `w-10 h-10 rounded-full border-2 border-white shadow-sm transition-transform active:scale-90 ${state.theme === c ? 'ring-2 ring-slate-400' : ''}`;
+                b.className = `w-8 h-8 rounded-full border-2 border-white shadow-sm shrink-0 transition-transform active:scale-90 ${state.theme === c ? 'ring-2 ring-slate-400' : ''}`;
                 b.style.backgroundColor = c;
                 b.onclick = () => { state.theme = c; renderGen(); };
                 tBox.appendChild(b);
             });
 
-            // Input Bindings
-            ['in-title', 'in-author', 'in-content', 'in-ad'].forEach(id => {
-                const el = document.getElementById(id);
-                const key = id.split('-')[1] === 'ad' ? 'adText' : id.split('-')[1];
-                el.value = state[key];
-                el.oninput = (e) => { state[key] = e.target.value; renderGen(); };
+            const cGrid = document.getElementById('default-chars');
+            DEFAULT_CHARS.forEach(src => {
+                const div = document.createElement('div');
+                div.className = 'char-item';
+                div.innerHTML = `<img src="${src}">`;
+                div.onclick = () => addIconToSelectedCard(src);
+                cGrid.appendChild(div);
             });
 
-            const pNumCheck = document.getElementById('check-pagenum');
-            pNumCheck.checked = state.showPageNum;
-            pNumCheck.onchange = (e) => { state.showPageNum = e.target.checked; renderGen(); };
+            bindInput('in-title', 'title');
+            bindInput('in-author', 'author');
+            bindInput('in-content', 'content');
+            bindInput('in-ad', 'adText');
 
-            // Drag Events
+            const adInput = document.getElementById('in-ad');
+            document.querySelector(`input[name="footer-mode"][value="${state.footerMode}"]`).checked = true;
+            if (state.footerMode === 'text') adInput.classList.remove('hidden');
+
+            document.getElementsByName('footer-mode').forEach(r => {
+                r.addEventListener('change', (e) => {
+                    state.footerMode = e.target.value;
+                    if (state.footerMode === 'text') {
+                        adInput.classList.remove('hidden');
+                        adInput.value = state.adText;
+                    } else {
+                        adInput.classList.add('hidden');
+                    }
+                    renderGen();
+                });
+            });
+
+            document.getElementById('check-default-bg').onchange = (e) => { state.useDefaultBg = e.target.checked; renderGen(); };
+            document.getElementById('check-merger-default-bg').onchange = (e) => { state.useDefaultBgMerger = e.target.checked; renderMerger(); };
+
             window.addEventListener('mousemove', onGlobalMouseMove);
             window.addEventListener('mouseup', onGlobalMouseUp);
             window.addEventListener('touchmove', (e) => onGlobalMouseMove(e), { passive: false });
             window.addEventListener('touchend', onGlobalMouseUp);
+            window.addEventListener('resize', () => { adjustScale(); renderGen(); });
 
-            window.onresize = adjustScale;
             adjustScale();
             renderGen();
         }
 
-        // --- Core Functions ---
+        function bindInput(id, key) {
+            const el = document.getElementById(id);
+            el.value = state[key];
+            el.oninput = (e) => { state[key] = e.target.value; renderGen(); };
+        }
 
         function switchMode(mode) {
             state.mode = mode;
-            
-            // Toggle Navbar State
             document.getElementById('nav-gen').classList.toggle('active', mode === 'gen');
             document.getElementById('nav-merge').classList.toggle('active', mode === 'merge');
-
-            // Toggle Sidebar
             document.getElementById('sidebar-gen').classList.toggle('hidden', mode !== 'gen');
             document.getElementById('sidebar-merge').classList.toggle('hidden', mode !== 'merge');
-
-            // Toggle Preview
             document.getElementById('canvas-wrapper').classList.toggle('hidden', mode !== 'gen');
             document.getElementById('merger-wrapper').classList.toggle('hidden', mode !== 'merge');
 
-            // Toggle Button Text
-            const exportSpan = document.querySelector('#export-btn span');
-            exportSpan.innerText = mode === 'gen' ? 'Download ZIP' : 'Export PNG';
+            const btnSpan = document.querySelector('#export-btn span');
+            if (mode === 'gen') btnSpan.innerText = '下載';
+            else btnSpan.innerText = (state.mergeOverlays.length > 1) ? '批量下載' : '下載';
 
             adjustScale();
+            if (mode === 'merge') renderMerger();
         }
 
         function switchStyle(id) {
@@ -373,332 +1049,348 @@
             styleConfigs.forEach(s => {
                 const b = document.getElementById(`btn-${s.id}`);
                 const isActive = s.id === id;
-                b.className = `p-3 border rounded-xl flex flex-col items-center gap-1 transition-all ${isActive ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-200' : 'border-slate-200 hover:bg-slate-50'}`;
-                const icon = b.querySelector('i');
-                if (icon) icon.className = `${isActive ? 'text-rose-500' : 'text-slate-400'}`;
+                b.className = `p-2 border rounded-lg flex flex-col items-center gap-1 transition-all ${isActive ? 'border-rose-500 bg-rose-50 ring-1 ring-rose-200' : 'border-slate-200 hover:bg-slate-50'}`;
+                const icon = b.querySelector('i') || b.querySelector('svg');
+                if (icon) {
+                    icon.classList.remove('text-rose-500', 'text-slate-400');
+                    icon.classList.add(isActive ? 'text-rose-500' : 'text-slate-400');
+                }
             });
             renderGen();
-            setTimeout(() => lucide.createIcons(), 10);
         }
 
         function adjustScale() {
             const wrap = document.getElementById('preview-section');
-            state.previewScale = Math.min(0.4, (wrap.clientWidth - 100) / 1080);
+            if (!wrap) return;
+            const availableWidth = wrap.clientWidth;
+            let scale = (availableWidth - 32) / APP_CONFIG.width;
+            if (scale > 0.35) scale = 0.35;
+            if (scale < 0.15) scale = 0.15;
+            state.previewScale = scale;
             document.documentElement.style.setProperty('--preview-scale', state.previewScale);
         }
 
-        // --- Handlers: Gen Mode ---
+        function selectCard(index) { state.selectedCardIndex = index; renderGen(); }
+
+        function addIconToSelectedCard(src) {
+            if (!state.cardIcons[state.selectedCardIndex]) state.cardIcons[state.selectedCardIndex] = [];
+            if (state.cardIcons[state.selectedCardIndex].length >= 5) { alert("最多 5 個貼紙"); return; }
+            state.cardIcons[state.selectedCardIndex].push({ id: Date.now(), src: src, x: 800, y: 1000 });
+            renderGen();
+        }
+
         function handleImgUpload(e, type) {
-            const file = e.target.files[0];
-            if (!file) return;
+            const file = e.target.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = (ev) => {
-                if (type === 'base') state.baseImg = ev.target.result;
-                if (type === 'ip') state.ipImg = ev.target.result;
+                if (type === 'base') state.uploadedBaseImg = ev.target.result;
+                else if (type === 'ip') addIconToSelectedCard(ev.target.result);
                 renderGen();
             };
             reader.readAsDataURL(file);
         }
 
-        // --- Handlers: Merger Mode ---
         function handleMergerUpload(e, type) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                if (type === 'bg') state.mergeBg = ev.target.result;
-                if (type === 'overlay') state.mergeOverlay = ev.target.result;
-                renderMerger();
-            };
-            reader.readAsDataURL(file);
+            const files = e.target.files;
+            if (!files.length) return;
+
+            if (type === 'bg') {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    state.mergeBg = ev.target.result;
+                    renderMerger();
+                };
+                reader.readAsDataURL(files[0]);
+            } else if (type === 'overlay') {
+                const promises = Array.from(files).map(file => {
+                    return new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => resolve(ev.target.result);
+                        reader.readAsDataURL(file);
+                    });
+                });
+
+                Promise.all(promises).then(results => {
+                    state.mergeOverlays = results;
+                    state.currentMergeIndex = 0;
+                    renderMerger();
+                    if (state.mode === 'merge') {
+                        document.querySelector('#export-btn span').innerText = (results.length > 1) ? '批量下載' : '下載';
+                    }
+                });
+            }
         }
 
+        function changeMergeSlide(dir) {
+            const newIndex = state.currentMergeIndex + dir;
+            if (newIndex >= 0 && newIndex < state.mergeOverlays.length) {
+                state.currentMergeIndex = newIndex;
+                renderMerger();
+            }
+        }
+
+        // --- 關鍵更新：使用您提供的 renderMerger 邏輯 ---
         function renderMerger() {
             const bgEl = document.getElementById('merge-bg-el');
             const overEl = document.getElementById('merge-overlay-el');
+            const prevBtn = document.getElementById('merge-prev');
+            const nextBtn = document.getElementById('merge-next');
+            const title = document.getElementById('preview-title');
 
+            // ===== 背景處理 =====
             if (state.mergeBg) {
-                bgEl.src = state.mergeBg;
+                bgEl.style.backgroundImage = `url(${state.mergeBg})`;
+                bgEl.style.backgroundSize = 'cover';
+                bgEl.style.backgroundRepeat = 'no-repeat';
+                bgEl.style.backgroundColor = 'transparent';
                 bgEl.classList.remove('hidden');
             }
-            if (state.mergeOverlay) {
-                overEl.src = state.mergeOverlay;
+            else if (state.useDefaultBgMerger) {
+                bgEl.style.backgroundImage = `url('${APP_CONFIG.bgUrl}')`;
+                bgEl.style.backgroundSize = 'repeat'; // pattern
+                bgEl.style.backgroundRepeat = 'repeat';
+                bgEl.style.backgroundColor = '#f8fafc';
+                bgEl.classList.remove('hidden');
+            }
+            else {
+                bgEl.style.backgroundImage = '';
+                bgEl.style.backgroundColor = '#ffffff';
+                bgEl.classList.remove('hidden');
+            }
+
+            // ===== Overlay 處理 =====
+            if (state.mergeOverlays.length > 0) {
+                overEl.src = state.mergeOverlays[state.currentMergeIndex];
                 overEl.classList.remove('hidden');
+
+                // 更新標題顯示頁數
+                title.innerText = `預覽 ${state.currentMergeIndex + 1} / ${state.mergeOverlays.length}`;
+
+                // 左右按鈕控制
+                if (state.mergeOverlays.length > 1) {
+                    prevBtn.classList.remove('hidden');
+                    nextBtn.classList.remove('hidden');
+
+                    prevBtn.classList.toggle('disabled', state.currentMergeIndex === 0);
+                    nextBtn.classList.toggle('disabled', state.currentMergeIndex === state.mergeOverlays.length - 1);
+                } else {
+                    prevBtn.classList.add('hidden');
+                    nextBtn.classList.add('hidden');
+                }
+            } else {
+                overEl.src = '';
+                overEl.classList.add('hidden');
+                prevBtn.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+                title.innerText = '預覽區';
             }
         }
 
-        // --- Logic: Gen Calculation ---
-        function calculatePages(paras) {
-            const pages = [[]]; 
-            let currentSet = [];
-            let currentH = 0;
-            const maxH = 920;
-            const m = document.getElementById('measurer');
-            
-            m.className = `style-${state.style}`;
-            m.style.fontFamily = (state.style === 'minimal') ? 'Noto Serif SC, serif' : 'Noto Sans SC, sans-serif';
+        function calculatePages(rawText) {
+            const pages = []; let currentSet = []; let currentH = 0;
+            const maxH = APP_CONFIG.height - APP_CONFIG.headerHeight - APP_CONFIG.footerHeight - APP_CONFIG.contentPadding * 2;
 
-            paras.forEach(p => {
-                m.innerText = p;
-                const h = m.offsetHeight + 60;
-                if (currentH + h > maxH) {
-                    pages.push(currentSet);
-                    currentSet = [p];
-                    currentH = h;
+            const fullHtml = marked.parse(rawText);
+            const tempDiv = document.createElement('div'); tempDiv.innerHTML = fullHtml;
+            const nodes = Array.from(tempDiv.children);
+            const m = document.getElementById('measurer');
+            m.className = `style-${state.style} md-content`;
+            if (['journal', 'playful', 'comic'].includes(state.style)) { m.style.fontFamily = 'Zen Maru Gothic, sans-serif'; }
+            else if (['luxury', 'paper', 'ink', 'retro', 'frame'].includes(state.style)) { m.style.fontFamily = 'Noto Serif TC, serif'; }
+            else { m.style.fontFamily = 'Noto Sans TC, sans-serif'; }
+
+            nodes.forEach(node => {
+                m.innerHTML = ''; m.appendChild(node.cloneNode(true));
+                const h = m.offsetHeight + 24;
+                if (currentH + h > maxH && currentSet.length > 0) {
+                    pages.push(currentSet); currentSet = [node.outerHTML]; currentH = h;
                 } else {
-                    currentSet.push(p);
-                    currentH += h;
+                    currentSet.push(node.outerHTML); currentH += h;
                 }
             });
             if (currentSet.length > 0) pages.push(currentSet);
+            if (pages.length === 0 && rawText.trim().length > 0) return [[marked.parse(rawText)]];
+            else if (pages.length === 0) return [[]];
             return pages;
+        }
+
+        function getBackgroundStyle() {
+            if (state.uploadedBaseImg) return `url(${state.uploadedBaseImg})`;
+            if (state.useDefaultBg) return `url('${APP_CONFIG.bgUrl}')`;
+            return 'none';
         }
 
         function renderGen() {
             const wrapper = document.getElementById('canvas-wrapper');
             wrapper.innerHTML = '';
-            const paras = state.content.split('\n').filter(p => p.trim() !== '');
-            const pages = calculatePages(paras);
-            pages.forEach((items, i) => wrapper.appendChild(createCard(i + 1, pages.length, items, i === 0)));
+            const pages = calculatePages(state.content);
+            if (state.selectedCardIndex >= pages.length + 1) state.selectedCardIndex = 0;
+
+            const coverWrapper = document.createElement('div');
+            coverWrapper.className = `card-wrapper ${state.selectedCardIndex === 0 ? 'selected' : ''}`;
+            coverWrapper.onclick = () => selectCard(0);
+            wrapper.appendChild(coverWrapper);
+            coverWrapper.appendChild(createCard(0, 1, pages.length + 1, [], true));
+
+            pages.forEach((items, i) => {
+                const idx = i + 1;
+                const cw = document.createElement('div');
+                cw.className = `card-wrapper ${state.selectedCardIndex === idx ? 'selected' : ''}`;
+                cw.onclick = () => selectCard(idx);
+                wrapper.appendChild(cw);
+                cw.appendChild(createCard(idx, idx + 1, pages.length + 1, items, false));
+            });
             lucide.createIcons();
         }
 
-        function createCard(num, total, paras, isCover) {
+        function createCard(pageIndex, num, total, htmlItems, isCover) {
             const card = document.createElement('div');
             card.className = `card-container style-${state.style}`;
             card.style.setProperty('--theme', state.theme);
-            if (state.baseImg) card.style.backgroundImage = `url(${state.baseImg})`;
 
-            const hasFooterText = state.adText && state.adText.trim() !== "";
+            card.style.backgroundImage = getBackgroundStyle();
+            card.style.backgroundSize = 'cover';
+            if (state.useDefaultBg && !state.uploadedBaseImg) {
+                card.style.backgroundSize = 'repeat';
+                card.style.backgroundColor = '#f0f0f0';
+            } else if (!state.uploadedBaseImg) {
+                card.style.backgroundColor = '#ffffff';
+            }
+
             const footer = document.createElement('div');
             footer.className = 'area-footer';
-            
-            let footerInner = "";
-            if (hasFooterText) {
-                footerInner += `<div class="footer-content-blur"><span class="text-xl font-bold text-slate-700 tracking-wider">${state.adText}</span></div>`;
-            }
-            if (state.showPageNum) {
-                footerInner += `<div class="absolute right-12 text-2xl font-black text-slate-400 p-2">${num} / ${total}</div>`;
-            }
-            footer.innerHTML = footerInner;
+            let fc = '';
+            if (state.footerMode === 'text') fc = `<div class="footer-pill text-sm">${state.adText}</div>`;
+            else if (state.footerMode === 'pagenum') fc = `<div class="footer-simple">${num} / ${total}</div>`;
+            footer.innerHTML = fc;
 
-            let bodyHtml = isCover ? renderCover() : renderContent(paras, num);
+            let bodyHtml = isCover ? renderCover() : renderContent(htmlItems);
+            if (state.style === 'frame') bodyHtml = `<div class="frame-border">${bodyHtml}</div>`;
 
-            card.innerHTML = `
-                <div class="area-header"></div>
-                <div class="area-content">${bodyHtml}</div>
-                <div class="ip-layer">
-                    ${state.ipImg ? `
-                        <div class="draggable-ip"
-                            style="right:80px; bottom:120px;"
-                            onmousedown="onIpStart(event)"
-                            ontouchstart="onIpStart(event)">
-                            <img src="${state.ipImg}" class="w-full pointer-events-none">
-                        </div>
-                    ` : ''}
-                </div>
-            `;
+            const iconsHtml = (state.cardIcons[pageIndex] || []).map((icon, idx) => `
+                <div class="draggable-ip" style="left:${icon.x}px; top:${icon.y}px;" data-card-index="${pageIndex}" data-icon-index="${idx}" onmousedown="onIpStart(event)" ontouchstart="onIpStart(event)">
+                    <img src="${icon.src}" class="w-full pointer-events-none">
+                    <button class="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-1 shadow-md" onclick="removeIcon(event, ${pageIndex}, ${idx})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                </div>`).join('');
+
+            card.innerHTML = `<div class="area-header"></div><div class="area-content md-content">${bodyHtml}</div><div class="ip-layer">${iconsHtml}</div>`;
             card.appendChild(footer);
             return card;
         }
 
+        function removeIcon(e, cIdx, iIdx) { e.stopPropagation(); state.cardIcons[cIdx].splice(iIdx, 1); renderGen(); }
+
+        // --- Render Templates ---
         function renderCover() {
             const t = state.title.replace(/\n/g, '<br>');
-            switch(state.style) {
-                case 'minimal': 
-                    return `<div class="h-full flex flex-col justify-between relative"><div class="absolute top-0 right-0 text-[200px] text-gray-100 font-serif opacity-50">01</div><div class="mt-40"><div class="text-3xl tracking-[10px] text-gray-400 mb-8 uppercase">Topic of the day</div><h1 class="text-[100px] font-black">${t}</h1><div class="accent-line"></div><p class="text-gray-500 mt-10 text-4xl italic">Created by ${state.author}</p></div><div class="border-t-4 border-gray-100 pt-10 flex justify-between items-end"><div class="text-3xl font-bold text-gray-400">READ MORE</div><i data-lucide="arrow-right" size="48"></i></div></div>`;
-                case 'poster':
-                    return `<div class="h-full flex flex-col justify-center items-center text-center"><div class="bg-black text-yellow-400 px-8 py-2 font-bold mb-10 transform -rotate-2 text-3xl uppercase">Visual Clone</div><div class="big-title text-[90px] mb-12">${t}</div><div class="bg-black text-white px-12 py-4 rounded-full font-black text-4xl mt-6">${state.author}</div></div>`;
-                case 'memo':
-                    return `<div class="h-full relative pt-20"><div class="absolute top-0 left-0 w-full h-16 bg-[#e0e0e0] flex items-center px-10 gap-6 border-b-4 border-gray-300"><div class="w-6 h-6 rounded-full bg-red-400"></div><div class="w-6 h-6 rounded-full bg-yellow-400"></div><div class="w-6 h-6 rounded-full bg-green-400"></div></div><div class="mt-10"><span class="bg-yellow-300 px-6 py-2 text-2xl font-bold transform -rotate-1 inline-block mb-10">MEMO SYSTEM</span><h1 class="text-[80px] font-black leading-normal border-b-4 border-dashed border-gray-400 pb-10">${t}</h1><div class="mt-12 flex items-center gap-6 text-3xl font-mono"><i data-lucide="user"></i> ${state.author}</div></div></div>`;
-                case 'journal':
-                    return `<div class="h-full flex flex-col justify-center items-center text-center journal-card"><div class="bg-white/90 p-16 rounded-[60px] border-4 border-dashed border-pink-200 transform rotate-1"><h1 class="text-[85px] text-gray-700 leading-relaxed mb-6">${t}</h1><div class="w-full h-2 bg-pink-200 rounded-full mb-6"></div><p class="text-pink-400 text-5xl">By ${state.author}</p></div></div>`;
-                case 'dry':
-                    return `<div class="h-full flex flex-col justify-center relative"><div class="absolute top-0 left-0 w-full h-4 bg-gradient-to-r from-blue-500 to-purple-500"></div><div class="glass-card mb-12 border-l-[15px] border-blue-500"><div class="text-blue-400 text-2xl font-black mb-6 uppercase">Knowledge Base</div><h1 class="text-[85px] font-black text-white">${t}</h1></div><div class="flex items-center gap-6 mt-10"><div class="w-24 h-24 rounded-full bg-slate-700 flex items-center justify-center text-white text-5xl font-black">${state.author.charAt(0).toUpperCase()}</div><div class="text-slate-400 text-3xl"><p class="text-white font-black">${state.author}</p><p class="mt-2">乾貨分享</p></div></div></div>`;
-                default: return `<div class="h-full flex flex-col justify-center"><h1 class="text-[90px] font-black">${t}</h1></div>`;
+            const a = state.author;
+            if (state.style === 'poster') {
+                return `<div class="h-full flex flex-col justify-center items-center text-center p-12"><div class="poster-box"><h1 class="text-[90px] font-black leading-none mb-10">${t}</h1><div class="w-full h-1 bg-white/30 mb-8"></div><p class="text-3xl font-bold tracking-widest uppercase">${a}</p></div></div>`;
             }
+            return `<div class="h-full flex flex-col justify-center items-start p-10"><div class="min-line"></div><h1 class="text-[90px] font-black leading-tight text-slate-800 mb-8">${t}</h1><p class="text-3xl text-slate-500 font-medium">@${a}</p></div>`;
         }
 
-        function renderContent(paras, num) {
-            const items = paras.map((p, idx) => {
-                if (state.style === 'poster') return `<div class="content-box text-5xl font-black mb-10">${p}</div>`;
-                if (state.style === 'dry') return `<div class="mb-10 flex items-start gap-6"><div class="num-badge">${idx + 1}</div><div class="glass-card text-4xl leading-relaxed w-full">${p}</div></div>`;
-                if (state.style === 'memo') return `<p class="mb-12 text-4xl font-bold border-b-2 border-slate-200 pb-4">${p}</p>`;
-                if (state.style === 'journal') return `<div class="journal-card mb-10 text-5xl text-pink-600">${p}</div>`;
-                return `<p class="mb-12 text-4xl leading-[1.6] text-justify font-medium">${p}</p>`;
-            }).join('');
-            return `<div class="h-full w-full">${state.style === 'memo' ? '<div class="tape"></div>' : ''}${items}</div>`;
+        function renderContent(items) {
+            const c = items.join('');
+            if (state.style === 'poster') return `<div class="poster-box">${c}</div>`;
+            return `<div>${c}</div>`;
         }
 
-        // --- Drag Logic ---
-        function onIpStart(e) {
-            dragTarget = e.currentTarget;
-            const evt = e.type.includes('touch') ? e.touches[0] : e;
-            startX = evt.clientX;
-            startY = evt.clientY;
-            initialX = dragTarget.offsetLeft;
-            initialY = dragTarget.offsetTop;
-            dragTarget.style.cursor = 'grabbing';
-            e.stopPropagation();
-            if (e.cancelable) e.preventDefault();
-        }
+        function onIpStart(e) { if (e.target.closest('button')) return; dragTarget = e.currentTarget; startX = (e.touches ? e.touches[0] : e).clientX; startY = (e.touches ? e.touches[0] : e).clientY; initialLeft = parseFloat(dragTarget.style.left) || 0; initialTop = parseFloat(dragTarget.style.top) || 0; dragTarget.style.cursor = 'grabbing'; dragTarget.style.zIndex = 1000; e.stopPropagation(); if (e.cancelable) e.preventDefault(); }
+        function onGlobalMouseMove(e) { if (!dragTarget) return; const evt = e.touches ? e.touches[0] : e; dragTarget.style.left = (initialLeft + (evt.clientX - startX) / state.previewScale) + 'px'; dragTarget.style.top = (initialTop + (evt.clientY - startY) / state.previewScale) + 'px'; }
+        function onGlobalMouseUp() { if (!dragTarget) return; const c = parseInt(dragTarget.getAttribute('data-card-index')), i = parseInt(dragTarget.getAttribute('data-icon-index')); if (state.cardIcons[c]?.[i]) { state.cardIcons[c][i].x = parseFloat(dragTarget.style.left); state.cardIcons[c][i].y = parseFloat(dragTarget.style.top); } dragTarget.style.cursor = 'grab'; dragTarget.style.zIndex = ''; dragTarget = null; }
 
-        function onGlobalMouseMove(e) {
-            if (!dragTarget || isMoving) return;
-            isMoving = true;
-            requestAnimationFrame(() => {
-                const evt = e.type.includes('touch') ? e.touches[0] : e;
-                const dx = (evt.clientX - startX) / state.previewScale;
-                const dy = (evt.clientY - startY) / state.previewScale;
-                dragTarget.style.left = (initialX + dx) + 'px';
-                dragTarget.style.top = (initialY + dy) + 'px';
-                dragTarget.style.right = 'auto';
-                dragTarget.style.bottom = 'auto';
-                isMoving = false;
-            });
-        }
+        function handleExport() { state.mode === 'gen' ? downloadZip() : downloadMerger(); }
 
-        function onGlobalMouseUp() {
-            if (!dragTarget) return;
-            dragTarget.style.cursor = 'grab';
-            dragTarget = null;
-        }
-
-        // --- Export Logic ---
-        function handleExport() {
-            if (state.mode === 'gen') {
-                downloadZip();
-            } else {
-                downloadMergerPng();
-            }
-        }
-
-        async function downloadMergerPng() {
+        async function downloadMerger() {
             const overlay = document.getElementById('export-overlay');
-            const prog = document.getElementById('progress-val');
-            overlay.style.display = 'flex';
-            prog.innerText = "Generating PNG...";
+            const progress = document.getElementById('progress-val');
+            const cardEl = document.getElementById('merger-card');
+            const overlayEl = document.getElementById('merge-overlay-el');
 
-            const card = document.getElementById('merger-card');
-            const clone = card.cloneNode(true);
-            
-            // Set for High Res Export
-            clone.style.transform = 'none';
-            clone.style.margin = '0';
-            clone.style.position = 'fixed';
-            clone.style.top = '0';
-            clone.style.left = '-9999px';
-            clone.style.width = '1080px';
-            clone.style.height = '1350px';
-            
-            document.body.appendChild(clone);
-            
-            // Show hidden elements in clone if they were set
-            const bg = clone.querySelector('.merger-bg-img');
-            const ov = clone.querySelector('.merger-overlay-img');
-            if(state.mergeBg) bg.classList.remove('hidden');
-            if(state.mergeOverlay) ov.classList.remove('hidden');
+            overlay.style.display = 'flex';
 
             try {
-                const canvas = await html2canvas(clone, {
-                    scale: 2,
-                    width: 1080,
-                    height: 1350,
-                    useCORS: true,
-                    allowTaint: true
-                });
-                
-                const link = document.createElement('a');
-                link.download = `Merged_${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            } catch (err) {
-                console.error(err);
-                alert("Export failed");
+                if (state.mergeOverlays.length <= 1) {
+                    const c = await html2canvas(cardEl, {
+                        scale: 1, width: APP_CONFIG.width, height: APP_CONFIG.height, useCORS: true, backgroundColor: '#ffffff'
+                    });
+                    const a = document.createElement('a');
+                    a.download = `Merger_${Date.now()}.png`;
+                    a.href = c.toDataURL();
+                    a.click();
+                }
+                else {
+                    const zip = new JSZip();
+                    const originalIndex = state.currentMergeIndex;
+
+                    for (let i = 0; i < state.mergeOverlays.length; i++) {
+                        progress.innerText = `Processing ${i + 1} / ${state.mergeOverlays.length}`;
+                        state.currentMergeIndex = i;
+                        overlayEl.src = state.mergeOverlays[i];
+                        await new Promise(resolve => {
+                            if (overlayEl.complete) resolve();
+                            else overlayEl.onload = resolve;
+                        });
+                        await new Promise(r => setTimeout(r, 50));
+                        const canvas = await html2canvas(cardEl, {
+                            scale: 1, width: APP_CONFIG.width, height: APP_CONFIG.height, useCORS: true, backgroundColor: '#ffffff'
+                        });
+                        const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+                        zip.file(`Merger_${i + 1}.png`, blob);
+                    }
+                    state.currentMergeIndex = originalIndex;
+                    overlayEl.src = state.mergeOverlays[originalIndex];
+                    progress.innerText = "Compressing...";
+                    const content = await zip.generateAsync({ type: "blob" });
+                    saveAs(content, `Batch_Merger_${Date.now()}.zip`);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error generating image');
             } finally {
-                document.body.removeChild(clone);
                 overlay.style.display = 'none';
             }
         }
 
         async function downloadZip() {
             const overlay = document.getElementById('export-overlay');
-            const prog = document.getElementById('progress-val');
+            const progress = document.getElementById('progress-val');
             overlay.style.display = 'flex';
+            await new Promise(r => setTimeout(r, 100));
             const zip = new JSZip();
-            const cards = document.querySelectorAll('.card-container');
-            
-            for (let i = 0; i < cards.length; i++) {
-                prog.innerText = `Processing Card ${i+1} / ${cards.length}`;
-                const original = cards[i];
-                const clone = original.cloneNode(true);
-                
-                clone.style.transform = 'none';
-                clone.style.margin = '0';
-                clone.style.position = 'fixed';
-                clone.style.top = '0';
-                clone.style.left = '-9999px';
-                clone.style.width = '1080px';
-                clone.style.height = '1350px';
-                clone.style.boxSizing = 'border-box';
-                
-                let bgColor = '#ffffff';
-                let textColor = '#000000';
-                
-                switch(state.style) {
-                    case 'dry': bgColor = '#1e293b'; textColor = '#f8fafc'; break;
-                    case 'poster': bgColor = '#FFD700'; textColor = '#000000'; break;
-                    case 'memo': bgColor = '#fff9c4'; textColor = '#4a4a4a'; break;
-                    case 'journal': bgColor = '#FFF0F5'; textColor = '#5D4037'; break;
-                    case 'minimal': bgColor = '#fdfdfd'; textColor = '#333333'; break;
-                }
-                
-                clone.style.backgroundColor = bgColor;
-                document.body.appendChild(clone);
+            const cards = document.querySelectorAll('.card-wrapper');
 
-                const canvas = await html2canvas(clone, { 
-                    scale: 2, 
-                    width: 1080, 
-                    height: 1350, 
-                    useCORS: true, 
-                    backgroundColor: bgColor,
-                    allowTaint: true,
-                    onclone: (clonedDoc, clonedElement) => {
-                        const clonedCard = clonedElement.querySelector('.card-container');
-                        if (clonedCard) {
-                            clonedCard.style.setProperty('--theme', state.theme);
-                            
-                            // Specific fix for Poster Style to enforce contrast
-                            if (state.style === 'poster') {
-                                clonedCard.style.backgroundColor = '#FFD700';
-                                clonedCard.querySelectorAll('.big-title, .content-box').forEach(el => {
-                                    el.style.backgroundColor = '#ffffff';
-                                    el.style.color = '#000000';
-                                    el.style.border = (el.classList.contains('big-title') ? '8px' : '4px') + ' solid #000000';
-                                    el.style.boxShadow = (el.classList.contains('big-title') ? '15px 15px 0px' : '10px 10px 0px') + ' #000000';
-                                });
-                            }
-                            
-                            // Visibility fix
-                            clonedCard.querySelectorAll('*').forEach(el => {
-                                const computed = window.getComputedStyle(el);
-                                if (computed.opacity === '0') el.style.opacity = '1';
-                            });
-                        }
-                    }
-                });
-                document.body.removeChild(clone);
-                const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 1.0));
-                zip.file(`HD_Post_${i+1}.png`, blob);
+            for (let i = 0; i < cards.length; i++) {
+                if (cards[i].closest('#merger-wrapper')) continue;
+
+                progress.innerText = `Card ${i + 1}`;
+                const el = cards[i].querySelector('.card-container').cloneNode(true);
+                el.style.transform = 'none'; el.style.position = 'fixed'; el.style.top = '0'; el.style.left = '-9999px';
+                el.style.width = APP_CONFIG.width + 'px';
+                el.style.height = APP_CONFIG.height + 'px';
+                el.querySelectorAll('button').forEach(b => b.remove());
+
+                let bg = '#ffffff';
+                if (['poster'].includes(state.style)) bg = '#FCD34D';
+
+                if (state.useDefaultBg && !state.uploadedBaseImg) {
+                    el.style.backgroundImage = `url('${APP_CONFIG.bgUrl}')`;
+                    el.style.backgroundSize = 'repeat';
+                }
+
+                el.style.backgroundColor = bg;
+                document.body.appendChild(el);
+
+                const c = await html2canvas(el, { scale: 1, width: APP_CONFIG.width, height: APP_CONFIG.height, useCORS: true, backgroundColor: bg });
+                document.body.removeChild(el);
+                zip.file(`${i + 1}.png`, await new Promise(r => c.toBlob(r)));
             }
-            
-            prog.innerText = "Compressing ZIP...";
-            const final = await zip.generateAsync({type: 'blob'});
-            saveAs(final, `VisualClone_HD_Export_${Date.now()}.zip`);
+            saveAs(await zip.generateAsync({ type: 'blob' }), `VisualClone_${Date.now()}.zip`);
             overlay.style.display = 'none';
         }
-
         window.onload = init;
     </script>
 </body>
+
 </html>
