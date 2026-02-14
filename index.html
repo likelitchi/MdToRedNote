@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Visual Clone Pro Suite v14 (Render Fix & Footer)</title>
+    <title>Visual Clone Pro Suite v27 (Fixed Layout)</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -15,23 +15,26 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@300;500;700;900&family=Zen+Maru+Gothic:wght@300;400;500;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@300;500;700;900&family=Zen+Maru+Gothic:wght@300;400;500;700;900&family=Permanent+Marker&display=swap');
 
         :root {
-            /* JS 將根據 APP_CONFIG 更新這些變數 */
+            /* 這些數值現在由 JS 的 APP_CONFIG 驅動 */
             --canvas-w: 1080px;
             --canvas-h: 1350px;
-            --header-h: 140px;
-            --footer-h: -30px;
-            --content-h: 1110px;
+            --header-h: 120px;
+            --footer-h: 60px;
+            --content-h: 1170px;
             --preview-scale: 0.35;
         }
 
         body {
             font-family: 'Noto Sans TC', sans-serif;
             background-color: #f8fafc;
-            height: 100vh;
-            height: 100dvh;
+            /* 關鍵修復：強制鎖定 Body 避免 iOS scrollIntoView 導致整個頁面位移 */
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
             overflow: hidden;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
@@ -56,6 +59,7 @@
             flex-shrink: 0;
             margin-left: auto;
             margin-right: auto;
+            scroll-margin-block: 20px;
         }
 
         .card-container {
@@ -97,7 +101,7 @@
 
         .area-footer {
             position: absolute;
-            bottom: -20px;
+            bottom: 0;
             left: 0;
             width: 100%;
             height: var(--footer-h);
@@ -137,17 +141,15 @@
             border: 1px solid rgba(255, 255, 255, 0.5);
         }
 
-        /* 關鍵更新：恢復 Simple Footer 顯示 */
         .footer-simple {
             color: #94a3b8;
             font-size: 24px;
             font-weight: 700;
             letter-spacing: 4px;
             font-family: 'Noto Sans TC', sans-serif;
-            /* 移除了隱藏屬性，現在會正常顯示 */
         }
 
-        /* --- Markdown Styles (Whitespace Preserved) --- */
+        /* --- Markdown Styles --- */
         .md-content h1 {
             font-size: 64px;
             font-weight: 900;
@@ -222,7 +224,7 @@
             white-space: pre-wrap;
         }
 
-        /* --- Styles Definition --- */
+        /* --- Styles Definition (24) --- */
         .style-minimal {
             font-family: 'Noto Sans TC';
             background: #fff;
@@ -232,14 +234,14 @@
         .style-minimal .min-line {
             width: 60px;
             height: 6px;
-            background: #0f172a;
+            background: var(--theme);
             margin: 40px 0;
             border-radius: 10px;
         }
 
         .style-poster {
             font-family: 'Noto Sans TC';
-            background: #FCD34D;
+            background: var(--theme);
             color: #fff;
         }
 
@@ -257,7 +259,7 @@
 
         .style-poster .poster-box h1,
         .style-poster .poster-box h2 {
-            color: #FCD34D !important;
+            color: var(--theme) !important;
         }
 
         .style-memo {
@@ -286,7 +288,7 @@
 
         .style-journal .journal-card {
             background: rgba(255, 255, 255, 0.8);
-            border: 2px dashed #f43f5e;
+            border: 2px dashed var(--theme);
             border-radius: 40px;
             padding: 40px;
             margin-bottom: 24px;
@@ -322,8 +324,8 @@
             right: -20%;
             width: 800px;
             height: 800px;
-            background: radial-gradient(circle, #fbcfe8 0%, transparent 70%);
-            opacity: 0.8;
+            background: radial-gradient(circle, var(--theme) 0%, transparent 70%);
+            opacity: 0.3;
             z-index: 0;
         }
 
@@ -336,6 +338,7 @@
             border-radius: 24px;
             border: 1px solid rgba(255, 255, 255, 0.8);
             margin-bottom: 24px;
+            border-left: 4px solid var(--theme);
         }
 
         .style-luxury {
@@ -347,7 +350,7 @@
         .style-luxury .mag-line {
             width: 100%;
             height: 1px;
-            background: #94a3b8;
+            background: var(--theme);
             margin: 30px 0;
         }
 
@@ -365,7 +368,7 @@
         .style-pop .pop-card {
             background: #fff;
             border: 3px solid #000;
-            box-shadow: 12px 12px 0 #fb923c;
+            box-shadow: 12px 12px 0 var(--theme);
             padding: 40px;
             border-radius: 16px;
             margin-bottom: 30px;
@@ -418,7 +421,7 @@
         }
 
         .style-brutal .outline-box {
-            border: 3px solid #000;
+            border: 3px solid var(--theme);
             padding: 30px;
             border-radius: 24px;
             background: #fff;
@@ -436,7 +439,7 @@
             padding: 60px 40px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             margin-bottom: 30px;
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--theme);
         }
 
         .style-dark {
@@ -449,7 +452,7 @@
             background: #1e293b;
             border-radius: 20px;
             padding: 40px;
-            border: 1px solid #334155;
+            border: 1px solid var(--theme);
             margin-bottom: 24px;
         }
 
@@ -457,7 +460,7 @@
             font-family: 'Zen Maru Gothic';
             background: #fff;
             color: #333;
-            background-image: radial-gradient(#e2e8f0 2px, transparent 2px);
+            background-image: radial-gradient(var(--theme) 2px, transparent 2px);
             background-size: 20px 20px;
         }
 
@@ -477,7 +480,7 @@
 
         .style-elegant .air-box {
             padding: 30px 0;
-            border-left: 2px solid #d4d4d4;
+            border-left: 2px solid var(--theme);
             padding-left: 40px;
             margin-bottom: 20px;
         }
@@ -517,7 +520,7 @@
         }
 
         .style-ink .zen-circle {
-            border: 1px solid #a8a29e;
+            border: 1px solid var(--theme);
             border-radius: 50%;
             width: 100px;
             height: 100px;
@@ -526,11 +529,11 @@
             justify-content: center;
             margin-bottom: 20px;
             font-size: 40px;
-            color: #d6d3d1;
+            color: var(--theme);
         }
 
         .style-ink .ink-content {
-            border-left: 4px solid #d6d3d1;
+            border-left: 4px solid var(--theme);
             padding-left: 30px;
             margin-bottom: 30px;
         }
@@ -547,6 +550,7 @@
             margin-bottom: 20px;
             border-radius: 12px;
             border: 1px solid #e2e8f0;
+            border-left: 5px solid var(--theme);
         }
 
         .style-frame {
@@ -556,7 +560,7 @@
         }
 
         .style-frame .frame-border {
-            border: 4px double #94a3b8;
+            border: 4px double var(--theme);
             height: 100%;
             padding: 50px 60px;
             display: flex;
@@ -564,6 +568,88 @@
             justify-content: center;
             background: #fff;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .style-neon {
+            font-family: 'Noto Sans TC';
+            background: #111;
+            color: #fff;
+        }
+
+        .style-neon .neon-border {
+            border: 4px solid var(--theme);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 0 20px var(--theme), inset 0 0 20px var(--theme);
+            text-shadow: 0 0 10px var(--theme);
+        }
+
+        .style-blob {
+            font-family: 'Noto Sans TC';
+            background: #fff;
+            color: #1e293b;
+            overflow: hidden;
+        }
+
+        .style-blob .blob-shape {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 900px;
+            height: 900px;
+            background: linear-gradient(45deg, var(--theme), #e0c3fc);
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            opacity: 0.2;
+            z-index: 0;
+            filter: blur(40px);
+        }
+
+        .style-blob .blob-content {
+            position: relative;
+            z-index: 10;
+        }
+
+        .style-cutout {
+            font-family: 'Noto Sans TC';
+            background: var(--theme);
+            color: #fff;
+        }
+
+        .style-cutout .cutout-text {
+            color: #fff;
+            mix-blend-mode: overlay;
+            font-weight: 900;
+        }
+
+        .style-checklist {
+            font-family: 'Noto Sans TC';
+            background: #f0f9ff;
+            color: #334155;
+        }
+
+        .style-checklist .check-item {
+            background: #fff;
+            padding: 24px 30px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .style-checklist .check-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #dbeafe;
+            color: var(--theme);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
         }
 
         /* IP Layer */
@@ -580,18 +666,60 @@
             height: auto;
             cursor: grab;
             pointer-events: auto;
+            touch-action: none;
             user-select: none;
             will-change: transform;
             filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15));
+            top: 0;
+            left: 0;
         }
 
         .draggable-ip:active {
             cursor: grabbing;
-            transform: scale(1.05);
+        }
+
+        .draggable-ip.active-icon {
+            outline: 4px solid #3b82f6;
+            border-radius: 4px;
         }
 
         .draggable-ip:hover {
             border: 2px dashed rgba(244, 63, 94, 0.5);
+        }
+
+        /* Cover Image */
+        .cover-pop {
+            position: absolute;
+            bottom: -40px;
+            right: -40px;
+            width: 65%;
+            transform: rotate(-3deg);
+            filter: drop-shadow(0 25px 25px rgba(0, 0, 0, 0.25));
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .swipe-hint {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            font-weight: 900;
+            font-size: 24px;
+            color: rgba(0, 0, 0, 0.3);
+            animation: bounce 2s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            50% {
+                transform: translateX(10px);
+            }
         }
 
         #export-overlay {
@@ -653,7 +781,7 @@
             }
         }
 
-        /* Nav controls for merger */
+        /* Nav controls */
         .merger-nav-btn {
             position: absolute;
             top: 50%;
@@ -683,6 +811,12 @@
             opacity: 0.3;
             pointer-events: none;
         }
+
+        .sticker-tab.active {
+            background-color: #fecdd3;
+            color: #be123c;
+            border-color: #fda4af;
+        }
     </style>
 </head>
 
@@ -697,7 +831,7 @@
                     <i data-lucide="layers" size="18"></i>
                 </div>
                 <h1 class="text-lg font-bold tracking-tight text-slate-800 hidden md:block">Visual <span
-                        class="text-rose-500">Suite v14</span></h1>
+                        class="text-rose-500">Suite v27</span></h1>
             </div>
 
             <div class="flex bg-slate-100 p-1 rounded-lg">
@@ -712,10 +846,30 @@
             </div>
         </div>
 
-        <button onclick="handleExport()" id="export-btn"
-            class="bg-rose-500 hover:bg-rose-600 text-white px-4 md:px-6 py-1.5 rounded-full font-bold flex items-center gap-2 transition-all shadow-lg shadow-rose-200 active:scale-95 text-xs md:text-sm">
-            <i data-lucide="download" size="14"></i> <span id="dl-text">下載</span>
-        </button>
+        <div class="flex items-center gap-2">
+            <button onclick="document.getElementById('import-json').click()"
+                class="text-slate-500 hover:text-slate-800 p-2 rounded-full hover:bg-slate-100 transition-all"
+                title="匯入專案">
+                <i data-lucide="upload" size="18"></i>
+            </button>
+            <input type="file" id="import-json" class="hidden" accept=".json" onchange="importJSON(event)">
+
+            <button onclick="exportJSON()"
+                class="text-slate-500 hover:text-slate-800 p-2 rounded-full hover:bg-slate-100 transition-all"
+                title="備份專案">
+                <i data-lucide="save" size="18"></i>
+            </button>
+
+            <button onclick="resetProject()"
+                class="text-red-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-all" title="重置">
+                <i data-lucide="trash-2" size="18"></i>
+            </button>
+
+            <button onclick="handleExport()" id="export-btn"
+                class="bg-rose-500 hover:bg-rose-600 text-white px-4 md:px-6 py-1.5 rounded-full font-bold flex items-center gap-2 transition-all shadow-lg shadow-rose-200 active:scale-95 text-xs md:text-sm ml-2">
+                <i data-lucide="download" size="14"></i> <span id="dl-text">下載</span>
+            </button>
+        </div>
     </header>
 
     <main class="flex-1 flex flex-col md:flex-row overflow-hidden h-full min-h-0">
@@ -741,14 +895,14 @@
 
                 <div class="w-full h-full overflow-y-auto custom-scroll p-4 pb-12 flex flex-col items-center min-h-0">
                     <div class="card-wrapper" style="margin-top: 0;">
-                        <!-- Image container for merger -->
                         <div id="merger-card" class="card-container">
-                            <!-- Background Element (CSS based) -->
                             <div id="merge-bg-el" class="absolute inset-0 w-full h-full hidden"
                                 style="background-size: cover; background-position: center;"></div>
+                            <div class="area-header"></div>
                             <div class="absolute top-[120px] bottom-[60px] left-0 w-full overflow-hidden z-10">
                                 <img id="merge-overlay-el" class="w-full h-auto hidden" />
                             </div>
+                            <div class="area-footer"></div>
                         </div>
                     </div>
                 </div>
@@ -758,8 +912,8 @@
         <!-- Sidebar -->
         <aside
             class="order-2 md:order-1 flex-1 md:flex-none md:w-[420px] bg-white border-r border-slate-200 flex flex-col overflow-hidden z-20 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] md:shadow-none min-h-0">
-            <div class="flex-1 overflow-y-auto p-5 pb-10 md:pb-6 custom-scroll min-h-0"
-                style="padding-bottom: env(safe-area-inset-bottom);">
+            <div class="flex-1 overflow-y-auto p-5 pb-[150px] md:pb-6 custom-scroll min-h-0"
+                style="padding-bottom: max(150px, env(safe-area-inset-bottom));">
 
                 <div id="sidebar-gen" class="space-y-6 pb-8">
                     <section class="space-y-3">
@@ -776,33 +930,73 @@
                                 <input type="file" class="hidden" accept="image/*"
                                     onchange="handleImgUpload(event, 'base')">
                             </label>
+
                             <label
-                                class="border border-slate-200 rounded-lg p-3 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all bg-white h-20">
-                                <i data-lucide="smile" class="text-slate-400 mb-1" size="16"></i>
-                                <span class="text-[10px] font-bold text-slate-600">貼紙</span>
+                                class="border border-slate-200 rounded-lg p-3 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all bg-white h-20 relative overflow-hidden group">
+                                <i data-lucide="star" class="text-rose-400 mb-1" size="16"></i>
+                                <span class="text-[10px] font-bold text-slate-600">封面主角</span>
+                                <div
+                                    class="absolute inset-0 bg-rose-50 opacity-0 group-hover:opacity-10 transition-opacity">
+                                </div>
                                 <input type="file" class="hidden" accept="image/*"
-                                    onchange="handleImgUpload(event, 'ip')">
+                                    onchange="handleImgUpload(event, 'cover')">
                             </label>
                         </div>
                         <div class="flex items-center gap-2 px-1">
                             <input type="checkbox" id="check-default-bg"
                                 class="w-4 h-4 rounded text-rose-600 focus:ring-rose-500">
                             <label for="check-default-bg" class="text-xs text-slate-500 font-bold">使用默認背景
-                                (Base64)</label>
+                                (frame.png)</label>
                         </div>
-                        <div class="char-grid pt-2" id="default-chars"></div>
+
+                        <div class="flex items-center gap-2 p-1 bg-slate-50 rounded-lg mb-2 mt-2">
+                            <button id="tab-princess"
+                                class="sticker-tab flex-1 py-1.5 text-xs font-bold rounded-md border border-transparent transition-all text-slate-500"
+                                onclick="switchStickerTab('princess')">公主</button>
+                            <button id="tab-doctor"
+                                class="sticker-tab flex-1 py-1.5 text-xs font-bold rounded-md border border-transparent transition-all text-slate-500"
+                                onclick="switchStickerTab('doctor')">博士</button>
+                        </div>
+                        <div class="char-grid" id="default-chars"></div>
+
+                        <div class="pt-2 border-t border-slate-100 mt-2">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">貼紙設定</span>
+                                <span id="icon-scale-val" class="text-[10px] font-mono text-slate-400">1.0x</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="range" id="icon-scale-slider" min="0.5" max="3.0" step="0.1" value="1.0"
+                                    class="w-full accent-rose-500 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer flex-1"
+                                    oninput="updateIconScale(this.value)">
+                                <button onclick="toggleIconFlip()"
+                                    class="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 text-slate-500 transition-colors"
+                                    title="左右翻轉">
+                                    <i data-lucide="flip-horizontal" size="16"></i>
+                                </button>
+                            </div>
+                        </div>
                     </section>
                     <section class="space-y-3">
                         <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">3. 內容文案</h3>
                         <input type="text" id="in-title"
                             class="w-full border border-slate-200 rounded-lg p-3 font-bold focus:ring-2 focus:ring-rose-500 outline-none text-slate-700 text-sm"
                             placeholder="封面標題">
-                        <input type="text" id="in-author"
-                            class="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-rose-500 outline-none text-slate-600"
-                            placeholder="署名 / IG">
+
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center h-full pt-1" title="顯示/隱藏 署名">
+                                <input type="checkbox" id="check-show-author"
+                                    class="w-5 h-5 rounded text-rose-600 focus:ring-rose-500 cursor-pointer border-slate-300">
+                            </div>
+                            <input type="text" id="in-author"
+                                class="flex-1 border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-rose-500 outline-none text-slate-600"
+                                placeholder="署名 / IG">
+                        </div>
+
                         <textarea id="in-content" rows="6"
                             class="w-full border border-slate-200 rounded-lg p-3 text-sm leading-relaxed focus:ring-2 focus:ring-rose-500 outline-none resize-none text-slate-600"
-                            placeholder="內容 (Markdown 支援)"></textarea>
+                            placeholder="正文內容 (輸入 '---' 強制分頁)"></textarea>
+
+                        <!-- Footer Settings -->
                         <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-2">
                             <span class="text-xs font-bold text-slate-500">頁尾模式</span>
                             <div class="flex items-center gap-3">
@@ -857,6 +1051,25 @@
                             </ul>
                         </div>
                     </section>
+
+                    <!-- NEW: Merger Footer Settings -->
+                    <section class="space-y-3">
+                        <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">頁尾設定</h3>
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-2">
+                            <span class="text-xs font-bold text-slate-500">頁尾模式</span>
+                            <div class="flex items-center gap-3">
+                                <label class="flex items-center gap-1"><input type="radio" name="merge-footer-mode"
+                                        value="pagenum" class="text-rose-600"><span class="text-xs">頁碼</span></label>
+                                <label class="flex items-center gap-1"><input type="radio" name="merge-footer-mode"
+                                        value="text" class="text-rose-600"><span class="text-xs">文字</span></label>
+                                <label class="flex items-center gap-1"><input type="radio" name="merge-footer-mode"
+                                        value="none" class="text-rose-600"><span class="text-xs">無</span></label>
+                            </div>
+                            <input type="text" id="merge-in-ad"
+                                class="w-full border border-slate-200 rounded p-2 text-xs hidden"
+                                placeholder="輸入推廣語...">
+                        </div>
+                    </section>
                 </div>
 
             </div>
@@ -880,7 +1093,7 @@
             headerHeight: 120,
             footerHeight: 60,
             contentPadding: 60,
-            bgUrl: 'frame.jpg'
+            bgUrl: 'frame.png'
         };
 
         const root = document.documentElement;
@@ -891,21 +1104,20 @@
         const contentH = APP_CONFIG.height - APP_CONFIG.headerHeight - APP_CONFIG.footerHeight - 20;
         root.style.setProperty('--content-h', contentH + 'px');
 
-        const DEFAULT_CHARS = [
-            "character/Gemini_Generated_Image_3x0vqz3x0vqz3x0v.png",
-            "character/Gemini_Generated_Image_4uls0l4uls0l4uls.png",
-            "character/Gemini_Generated_Image_8qhruu8qhruu8qhr.png",
-            "character/Gemini_Generated_Image_bbdxj2bbdxj2bbdx.png",
-            "character/Gemini_Generated_Image_ff9o3bff9o3bff9o.png",
-            "character/Gemini_Generated_Image_fylmi8fylmi8fylm.png",
-            "character/Gemini_Generated_Image_ge2lclge2lclge2l.png",
-            "character/Gemini_Generated_Image_je1w43je1w43je1w.png",
-            "character/Gemini_Generated_Image_nuxpt7nuxpt7nuxp.png",
-            "character/Gemini_Generated_Image_svegphsvegphsveg.png",
-            "character/Gemini_Generated_Image_tfcrmvtfcrmvtfrc.png",
-            "character/Gemini_Generated_Image_u6h6pcu6h6pcu6h6.png",
-            "character/Gemini_Generated_Image_uhtdwquhtdwquhtd.png"
-        ];
+        // New Sticker Sets
+        const STICKER_DATA = {
+            princess: [
+                "character/princess/princess-1.png", "character/princess/princess-2.png", "character/princess/princess-3.png", "character/princess/princess-4.png",
+                "character/princess/princess-5.png", "character/princess/princess-6.png", "character/princess/princess-7.png", "character/princess/princess-8.png",
+                "character/princess/princess-9.png", "character/princess/princess-10.png", "character/princess/princess-11.png", "character/princess/princess-12.png",
+                "character/princess/princess-13.png"
+            ],
+            doctor: [
+                "character/doctor/doctor-1.png", "character/doctor/doctor-2.png", "character/doctor/doctor-3.png", "character/doctor/doctor-4.png",
+                "character/doctor/doctor-5.png", "character/doctor/doctor-6.png", "character/doctor/doctor-7.png", "character/doctor/doctor-8.png",
+                "character/doctor/doctor-9.png", "character/doctor/doctor-10.png", "character/doctor/doctor-11.png", "character/doctor/doctor-12.png"
+            ]
+        };
 
         const styleConfigs = [
             { id: 'minimal', name: '極簡', icon: 'monitor' },
@@ -918,7 +1130,10 @@
             { id: 'pop', name: '撞色', icon: 'zap' },
             { id: 'dry', name: '卡片', icon: 'credit-card' },
             { id: 'paper', name: '紙質', icon: 'newspaper' },
-            { id: 'solid', name: '純色', icon: 'layout' },
+            { id: 'neon', name: '霓虹', icon: 'zap-off' },
+            { id: 'blob', name: '流體', icon: 'cloud' },
+            { id: 'cutout', name: '鏤空', icon: 'scissors' },
+            { id: 'checklist', name: '清單', icon: 'check-square' },
             { id: 'brutal', name: '線框', icon: 'box' },
             { id: 'retro', name: '膠片', icon: 'camera' },
             { id: 'dark', name: '夜間', icon: 'moon' },
@@ -933,27 +1148,85 @@
 
         const themes = ["#f43f5e", "#3b82f6", "#10b981", "#f59e0b", "#000000"];
 
-        const state = {
+        // --- Core State ---
+        let state = {
             mode: 'gen',
             title: "2024年必須掌握的\n前端視覺開發技巧",
             author: "@VisualCloneLab",
-            content: `## 1. 掌握色彩心理學\n色彩不僅是裝飾，它能直接影響用戶的情緒。**暖色調**傳遞活力，*冷色調*傳遞專業。\n\n## 2. 留白的藝術\n> 留白不是空，而是設計的呼吸。\n\n不要填滿每一個角落。適當的留白能讓設計呼吸，引導視線聚焦核心內容。\n\n## 3. 關鍵清單\n- 字體層級關係\n- 微交互動畫\n- 響應式思維`,
+            content: `## 1. 掌握色彩心理學\n色彩不僅是裝飾。\n\n---\n\n## 2. 留白的藝術\n> 留白不是空，而是設計的呼吸。\n\n不要填滿每一個角落。`,
             footerMode: 'pagenum',
             adText: "點讚 + 收藏 ✨",
             theme: "#f43f5e",
             style: "minimal",
-            useDefaultBg: false,
+            useDefaultBg: true,
             uploadedBaseImg: null,
+            coverImg: null,
             selectedCardIndex: 0,
             cardIcons: {},
-            useDefaultBgMerger: false,
+            useDefaultBgMerger: true,
             mergeBg: null,
             mergeOverlays: [],
             currentMergeIndex: 0,
-            previewScale: 0.35
+            previewScale: 0.35,
+            showAuthor: false, // Default untick
+            stickerTab: 'princess',
+            activeIcon: null
         };
 
-        let dragTarget = null, startX, startY, initialLeft, initialTop;
+        const saved = localStorage.getItem("visual_clone_project");
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                state = { ...state, ...parsed };
+                state.activeIcon = null;
+            } catch (e) { console.error("Load failed", e); }
+        }
+
+        let dragTarget = null;
+        let initialX, initialY, startX, startY;
+        let renderQueued = false;
+
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        const persistState = debounce(() => {
+            localStorage.setItem("visual_clone_project", JSON.stringify(state));
+        }, 1000);
+
+        function updateState(key, value) {
+            state[key] = value;
+            persistState();
+        }
+
+        function scheduleRender(options) {
+            if (renderQueued) return;
+            renderQueued = true;
+            requestAnimationFrame(() => {
+                renderGen(options);
+                renderQueued = false;
+            });
+        }
+
+        function renderThemeButtons() {
+            const tBox = document.getElementById('theme-box');
+            tBox.innerHTML = '';
+            themes.forEach(c => {
+                const b = document.createElement('button');
+                b.className = `w-8 h-8 rounded-full border-2 border-white shadow-sm shrink-0 transition-transform active:scale-90 ${state.theme === c ? 'ring-2 ring-slate-400' : ''}`;
+                b.style.backgroundColor = c;
+                b.onclick = () => {
+                    updateState('theme', c);
+                    renderThemeButtons();
+                    scheduleRender({ scroll: false });
+                };
+                tBox.appendChild(b);
+            });
+        }
 
         function init() {
             lucide.createIcons();
@@ -968,28 +1241,21 @@
                 sBox.appendChild(btn);
             });
 
-            const tBox = document.getElementById('theme-box');
-            themes.forEach(c => {
-                const b = document.createElement('button');
-                b.className = `w-8 h-8 rounded-full border-2 border-white shadow-sm shrink-0 transition-transform active:scale-90 ${state.theme === c ? 'ring-2 ring-slate-400' : ''}`;
-                b.style.backgroundColor = c;
-                b.onclick = () => { state.theme = c; renderGen(); };
-                tBox.appendChild(b);
-            });
-
-            const cGrid = document.getElementById('default-chars');
-            DEFAULT_CHARS.forEach(src => {
-                const div = document.createElement('div');
-                div.className = 'char-item';
-                div.innerHTML = `<img src="${src}">`;
-                div.onclick = () => addIconToSelectedCard(src);
-                cGrid.appendChild(div);
-            });
+            renderThemeButtons();
+            switchStickerTab(state.stickerTab || 'princess');
 
             bindInput('in-title', 'title');
             bindInput('in-author', 'author');
             bindInput('in-content', 'content');
             bindInput('in-ad', 'adText');
+            bindInput('merge-in-ad', 'adText');
+
+            const authCheck = document.getElementById('check-show-author');
+            authCheck.checked = state.showAuthor;
+            authCheck.onchange = (e) => {
+                updateState('showAuthor', e.target.checked);
+                scheduleRender({ scroll: false });
+            };
 
             const adInput = document.getElementById('in-ad');
             document.querySelector(`input[name="footer-mode"][value="${state.footerMode}"]`).checked = true;
@@ -997,44 +1263,134 @@
 
             document.getElementsByName('footer-mode').forEach(r => {
                 r.addEventListener('change', (e) => {
-                    state.footerMode = e.target.value;
+                    updateState('footerMode', e.target.value);
                     if (state.footerMode === 'text') {
                         adInput.classList.remove('hidden');
                         adInput.value = state.adText;
                     } else {
                         adInput.classList.add('hidden');
                     }
-                    renderGen();
+                    scheduleRender({ scroll: false });
                 });
             });
 
-            document.getElementById('check-default-bg').onchange = (e) => { state.useDefaultBg = e.target.checked; renderGen(); };
-            document.getElementById('check-merger-default-bg').onchange = (e) => { state.useDefaultBgMerger = e.target.checked; renderMerger(); };
+            const mergeAdInput = document.getElementById('merge-in-ad');
+            document.querySelector(`input[name="merge-footer-mode"][value="${state.footerMode}"]`).checked = true;
+            if (state.footerMode === 'text') mergeAdInput.classList.remove('hidden');
 
-            window.addEventListener('mousemove', onGlobalMouseMove);
-            window.addEventListener('mouseup', onGlobalMouseUp);
-            window.addEventListener('touchmove', (e) => onGlobalMouseMove(e), { passive: false });
-            window.addEventListener('touchend', onGlobalMouseUp);
-            window.addEventListener('resize', () => { adjustScale(); renderGen(); });
+            document.getElementsByName('merge-footer-mode').forEach(r => {
+                r.addEventListener('change', (e) => {
+                    updateState('footerMode', e.target.value);
+                    if (state.footerMode === 'text') {
+                        mergeAdInput.classList.remove('hidden');
+                        mergeAdInput.value = state.adText;
+                    } else {
+                        mergeAdInput.classList.add('hidden');
+                    }
+                    renderMerger();
+                });
+            });
+
+            const defBg = document.getElementById('check-default-bg');
+            defBg.checked = state.useDefaultBg;
+            defBg.onchange = (e) => { updateState('useDefaultBg', e.target.checked); scheduleRender({ scroll: false }); };
+
+            const mergDefBg = document.getElementById('check-merger-default-bg');
+            mergDefBg.checked = state.useDefaultBgMerger;
+            mergDefBg.onchange = (e) => { updateState('useDefaultBgMerger', e.target.checked); renderMerger(); };
+
+            window.addEventListener('pointermove', onGlobalPointerMove);
+            window.addEventListener('pointerup', onGlobalPointerUp);
+            window.addEventListener('resize', () => { adjustScale(); scheduleRender({ scroll: false }); });
 
             adjustScale();
-            renderGen();
+            renderGen({ scroll: false });
         }
+
+        function updateIconScale(val) {
+            if (state.activeIcon) {
+                const { cardIdx, iconIdx } = state.activeIcon;
+                if (state.cardIcons[cardIdx] && state.cardIcons[cardIdx][iconIdx]) {
+                    state.cardIcons[cardIdx][iconIdx].scale = parseFloat(val);
+                    document.getElementById('icon-scale-val').innerText = parseFloat(val).toFixed(1) + 'x';
+                    persistState();
+                    scheduleRender({ scroll: false });
+                }
+            }
+        }
+
+        function switchStickerTab(tab) {
+            updateState('stickerTab', tab);
+            document.querySelectorAll('.sticker-tab').forEach(btn => {
+                btn.classList.remove('active', 'bg-rose-100', 'text-rose-600', 'border-rose-200');
+                btn.classList.add('text-slate-500', 'border-transparent');
+            });
+            const activeBtn = document.getElementById(`tab-${tab}`);
+            if (activeBtn) {
+                activeBtn.classList.add('active', 'bg-rose-100', 'text-rose-600', 'border-rose-200');
+                activeBtn.classList.remove('text-slate-500', 'border-transparent');
+            }
+            const cGrid = document.getElementById('default-chars');
+            cGrid.innerHTML = '';
+            const stickers = STICKER_DATA[tab] || STICKER_DATA['princess'];
+            stickers.forEach(src => {
+                const div = document.createElement('div');
+                div.className = 'char-item';
+                div.innerHTML = `<img src="${src}">`;
+                div.onclick = () => addIconToSelectedCard(src);
+                cGrid.appendChild(div);
+            });
+        }
+
+        const debouncedUpdateContent = debounce((key, value) => {
+            state[key] = value;
+            persistState();
+            scheduleRender({ scroll: false });
+        }, 150);
 
         function bindInput(id, key) {
             const el = document.getElementById(id);
-            el.value = state[key];
-            el.oninput = (e) => { state[key] = e.target.value; renderGen(); };
+            if (el) {
+                el.value = state[key];
+                el.oninput = (e) => {
+                    if (key === 'content') {
+                        debouncedUpdateContent(key, e.target.value);
+                    } else {
+                        state[key] = e.target.value;
+                        persistState();
+                        if (state.mode === 'merge' && key === 'adText') renderMerger();
+                        else scheduleRender({ scroll: false });
+                    }
+                };
+            }
         }
 
         function switchMode(mode) {
-            state.mode = mode;
+            updateState('mode', mode);
             document.getElementById('nav-gen').classList.toggle('active', mode === 'gen');
             document.getElementById('nav-merge').classList.toggle('active', mode === 'merge');
             document.getElementById('sidebar-gen').classList.toggle('hidden', mode !== 'gen');
             document.getElementById('sidebar-merge').classList.toggle('hidden', mode !== 'merge');
             document.getElementById('canvas-wrapper').classList.toggle('hidden', mode !== 'gen');
             document.getElementById('merger-wrapper').classList.toggle('hidden', mode !== 'merge');
+
+            if (mode === 'merge') {
+                const radios = document.getElementsByName('merge-footer-mode');
+                radios.forEach(r => r.checked = (r.value === state.footerMode));
+
+                const mergeAdInput = document.getElementById('merge-in-ad');
+                mergeAdInput.value = state.adText;
+                if (state.footerMode === 'text') mergeAdInput.classList.remove('hidden');
+                else mergeAdInput.classList.add('hidden');
+            } else {
+                const radios = document.getElementsByName('footer-mode');
+                radios.forEach(r => r.checked = (r.value === state.footerMode));
+
+                const adInput = document.getElementById('in-ad');
+                adInput.value = state.adText;
+                if (state.footerMode === 'text') adInput.classList.remove('hidden');
+                else adInput.classList.add('hidden');
+            }
 
             const btnSpan = document.querySelector('#export-btn span');
             if (mode === 'gen') btnSpan.innerText = '下載';
@@ -1045,7 +1401,7 @@
         }
 
         function switchStyle(id) {
-            state.style = id;
+            updateState('style', id);
             styleConfigs.forEach(s => {
                 const b = document.getElementById(`btn-${s.id}`);
                 const isActive = s.id === id;
@@ -1056,7 +1412,7 @@
                     icon.classList.add(isActive ? 'text-rose-500' : 'text-slate-400');
                 }
             });
-            renderGen();
+            scheduleRender({ scroll: false });
         }
 
         function adjustScale() {
@@ -1070,22 +1426,36 @@
             document.documentElement.style.setProperty('--preview-scale', state.previewScale);
         }
 
-        function selectCard(index) { state.selectedCardIndex = index; renderGen(); }
+        function selectCard(index) {
+            state.selectedCardIndex = index;
+            state.activeIcon = null;
+            scheduleRender({ scroll: true });
+        }
 
         function addIconToSelectedCard(src) {
             if (!state.cardIcons[state.selectedCardIndex]) state.cardIcons[state.selectedCardIndex] = [];
             if (state.cardIcons[state.selectedCardIndex].length >= 5) { alert("最多 5 個貼紙"); return; }
-            state.cardIcons[state.selectedCardIndex].push({ id: Date.now(), src: src, x: 800, y: 1000 });
-            renderGen();
+
+            const newIdx = state.cardIcons[state.selectedCardIndex].length;
+            state.cardIcons[state.selectedCardIndex].push({ id: Date.now(), src: src, x: 800, y: 1000, scale: 1.0, flipX: false });
+            state.activeIcon = { cardIdx: state.selectedCardIndex, iconIdx: newIdx };
+
+            const slider = document.getElementById('icon-scale-slider');
+            if (slider) slider.value = 1.0;
+            document.getElementById('icon-scale-val').innerText = '1.0x';
+
+            persistState();
+            scheduleRender({ scroll: true });
         }
 
         function handleImgUpload(e, type) {
             const file = e.target.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = (ev) => {
-                if (type === 'base') state.uploadedBaseImg = ev.target.result;
+                if (type === 'base') updateState('uploadedBaseImg', ev.target.result);
                 else if (type === 'ip') addIconToSelectedCard(ev.target.result);
-                renderGen();
+                else if (type === 'cover') updateState('coverImg', ev.target.result);
+                scheduleRender({ scroll: false });
             };
             reader.readAsDataURL(file);
         }
@@ -1097,7 +1467,7 @@
             if (type === 'bg') {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
-                    state.mergeBg = ev.target.result;
+                    updateState('mergeBg', ev.target.result);
                     renderMerger();
                 };
                 reader.readAsDataURL(files[0]);
@@ -1111,7 +1481,7 @@
                 });
 
                 Promise.all(promises).then(results => {
-                    state.mergeOverlays = results;
+                    updateState('mergeOverlays', results);
                     state.currentMergeIndex = 0;
                     renderMerger();
                     if (state.mode === 'merge') {
@@ -1129,7 +1499,6 @@
             }
         }
 
-        // --- 關鍵更新：使用您提供的 renderMerger 邏輯 ---
         function renderMerger() {
             const bgEl = document.getElementById('merge-bg-el');
             const overEl = document.getElementById('merge-overlay-el');
@@ -1137,7 +1506,6 @@
             const nextBtn = document.getElementById('merge-next');
             const title = document.getElementById('preview-title');
 
-            // ===== 背景處理 =====
             if (state.mergeBg) {
                 bgEl.style.backgroundImage = `url(${state.mergeBg})`;
                 bgEl.style.backgroundSize = 'cover';
@@ -1147,7 +1515,7 @@
             }
             else if (state.useDefaultBgMerger) {
                 bgEl.style.backgroundImage = `url('${APP_CONFIG.bgUrl}')`;
-                bgEl.style.backgroundSize = 'repeat'; // pattern
+                bgEl.style.backgroundSize = 'repeat';
                 bgEl.style.backgroundRepeat = 'repeat';
                 bgEl.style.backgroundColor = '#f8fafc';
                 bgEl.classList.remove('hidden');
@@ -1158,19 +1526,17 @@
                 bgEl.classList.remove('hidden');
             }
 
-            // ===== Overlay 處理 =====
             if (state.mergeOverlays.length > 0) {
                 overEl.src = state.mergeOverlays[state.currentMergeIndex];
                 overEl.classList.remove('hidden');
 
-                // 更新標題顯示頁數
-                title.innerText = `預覽 ${state.currentMergeIndex + 1} / ${state.mergeOverlays.length}`;
+                if (state.mode === 'merge') {
+                    title.innerText = `預覽 ${state.currentMergeIndex + 1} / ${state.mergeOverlays.length}`;
+                }
 
-                // 左右按鈕控制
                 if (state.mergeOverlays.length > 1) {
                     prevBtn.classList.remove('hidden');
                     nextBtn.classList.remove('hidden');
-
                     prevBtn.classList.toggle('disabled', state.currentMergeIndex === 0);
                     nextBtn.classList.toggle('disabled', state.currentMergeIndex === state.mergeOverlays.length - 1);
                 } else {
@@ -1182,33 +1548,62 @@
                 overEl.classList.add('hidden');
                 prevBtn.classList.add('hidden');
                 nextBtn.classList.add('hidden');
-                title.innerText = '預覽區';
+                if (state.mode === 'merge') title.innerText = '預覽區';
+            }
+
+            // Update Merger Footer
+            const footer = document.querySelector('#merger-card .area-footer');
+            if (footer) {
+                let fc = '';
+                let num = state.currentMergeIndex + 1;
+                let total = Math.max(state.mergeOverlays.length, 1);
+
+                if (state.footerMode === 'text') fc = `<div class="footer-pill text-sm">${state.adText}</div>`;
+                else if (state.footerMode === 'pagenum') fc = `<div class="footer-simple">${num} / ${total}</div>`;
+                footer.innerHTML = fc;
             }
         }
 
+        // --- NEW: Forced Pagination Logic ---
         function calculatePages(rawText) {
-            const pages = []; let currentSet = []; let currentH = 0;
-            const maxH = APP_CONFIG.height - APP_CONFIG.headerHeight - APP_CONFIG.footerHeight - APP_CONFIG.contentPadding * 2;
+            const segments = rawText.split(/\n-{3,}\n/g);
 
-            const fullHtml = marked.parse(rawText);
-            const tempDiv = document.createElement('div'); tempDiv.innerHTML = fullHtml;
-            const nodes = Array.from(tempDiv.children);
+            const pages = [];
+
             const m = document.getElementById('measurer');
             m.className = `style-${state.style} md-content`;
             if (['journal', 'playful', 'comic'].includes(state.style)) { m.style.fontFamily = 'Zen Maru Gothic, sans-serif'; }
             else if (['luxury', 'paper', 'ink', 'retro', 'frame'].includes(state.style)) { m.style.fontFamily = 'Noto Serif TC, serif'; }
             else { m.style.fontFamily = 'Noto Sans TC, sans-serif'; }
 
-            nodes.forEach(node => {
-                m.innerHTML = ''; m.appendChild(node.cloneNode(true));
-                const h = m.offsetHeight + 24;
-                if (currentH + h > maxH && currentSet.length > 0) {
-                    pages.push(currentSet); currentSet = [node.outerHTML]; currentH = h;
-                } else {
-                    currentSet.push(node.outerHTML); currentH += h;
-                }
+            const maxH = APP_CONFIG.height - APP_CONFIG.headerHeight - APP_CONFIG.footerHeight - APP_CONFIG.contentPadding * 2;
+
+            segments.forEach(segment => {
+                if (!segment.trim()) return;
+
+                let currentSet = [];
+                let currentH = 0;
+
+                const fullHtml = marked.parse(segment);
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = fullHtml;
+                const nodes = Array.from(tempDiv.children);
+
+                nodes.forEach(node => {
+                    m.innerHTML = ''; m.appendChild(node.cloneNode(true));
+                    const h = m.offsetHeight + 24;
+                    if (currentH + h > maxH && currentSet.length > 0) {
+                        pages.push(currentSet);
+                        currentSet = [node.outerHTML];
+                        currentH = h;
+                    } else {
+                        currentSet.push(node.outerHTML);
+                        currentH += h;
+                    }
+                });
+                if (currentSet.length > 0) pages.push(currentSet);
             });
-            if (currentSet.length > 0) pages.push(currentSet);
+
             if (pages.length === 0 && rawText.trim().length > 0) return [[marked.parse(rawText)]];
             else if (pages.length === 0) return [[]];
             return pages;
@@ -1220,85 +1615,284 @@
             return 'none';
         }
 
-        function renderGen() {
+        function renderGen(options = { scroll: false }) {
             const wrapper = document.getElementById('canvas-wrapper');
-            wrapper.innerHTML = '';
+            const previewSection = document.getElementById('preview-section');
+            if (!wrapper) return;
+
+            const currentScroll = previewSection.scrollTop;
+
             const pages = calculatePages(state.content);
-            if (state.selectedCardIndex >= pages.length + 1) state.selectedCardIndex = 0;
+            const totalCards = pages.length + 1;
 
-            const coverWrapper = document.createElement('div');
-            coverWrapper.className = `card-wrapper ${state.selectedCardIndex === 0 ? 'selected' : ''}`;
-            coverWrapper.onclick = () => selectCard(0);
-            wrapper.appendChild(coverWrapper);
-            coverWrapper.appendChild(createCard(0, 1, pages.length + 1, [], true));
+            if (state.selectedCardIndex >= totalCards) state.selectedCardIndex = 0;
 
-            pages.forEach((items, i) => {
-                const idx = i + 1;
-                const cw = document.createElement('div');
-                cw.className = `card-wrapper ${state.selectedCardIndex === idx ? 'selected' : ''}`;
-                cw.onclick = () => selectCard(idx);
-                wrapper.appendChild(cw);
-                cw.appendChild(createCard(idx, idx + 1, pages.length + 1, items, false));
-            });
-            lucide.createIcons();
-        }
+            let existing = Array.from(wrapper.children).filter(c => c.classList.contains('card-wrapper'));
 
-        function createCard(pageIndex, num, total, htmlItems, isCover) {
-            const card = document.createElement('div');
-            card.className = `card-container style-${state.style}`;
-            card.style.setProperty('--theme', state.theme);
-
-            card.style.backgroundImage = getBackgroundStyle();
-            card.style.backgroundSize = 'cover';
-            if (state.useDefaultBg && !state.uploadedBaseImg) {
-                card.style.backgroundSize = 'repeat';
-                card.style.backgroundColor = '#f0f0f0';
-            } else if (!state.uploadedBaseImg) {
-                card.style.backgroundColor = '#ffffff';
+            if (existing.length < totalCards) {
+                for (let i = existing.length; i < totalCards; i++) {
+                    const cw = document.createElement('div');
+                    cw.className = 'card-wrapper';
+                    cw.onclick = () => selectCard(i);
+                    cw.innerHTML = `
+                        <div class="card-container">
+                            <div class="area-header"></div>
+                            <div class="area-content md-content"></div>
+                            <div class="ip-layer"></div>
+                            <div class="area-footer"></div>
+                        </div>
+                    `;
+                    wrapper.appendChild(cw);
+                }
             }
 
-            const footer = document.createElement('div');
-            footer.className = 'area-footer';
-            let fc = '';
-            if (state.footerMode === 'text') fc = `<div class="footer-pill text-sm">${state.adText}</div>`;
-            else if (state.footerMode === 'pagenum') fc = `<div class="footer-simple">${num} / ${total}</div>`;
-            footer.innerHTML = fc;
+            while (wrapper.children.length > totalCards) {
+                wrapper.removeChild(wrapper.lastChild);
+            }
 
-            let bodyHtml = isCover ? renderCover() : renderContent(htmlItems);
-            if (state.style === 'frame') bodyHtml = `<div class="frame-border">${bodyHtml}</div>`;
+            existing = Array.from(wrapper.children).filter(c => c.classList.contains('card-wrapper'));
 
-            const iconsHtml = (state.cardIcons[pageIndex] || []).map((icon, idx) => `
-                <div class="draggable-ip" style="left:${icon.x}px; top:${icon.y}px;" data-card-index="${pageIndex}" data-icon-index="${idx}" onmousedown="onIpStart(event)" ontouchstart="onIpStart(event)">
-                    <img src="${icon.src}" class="w-full pointer-events-none">
-                    <button class="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-1 shadow-md" onclick="removeIcon(event, ${pageIndex}, ${idx})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-                </div>`).join('');
+            existing.forEach((cw, i) => {
+                const container = cw.querySelector('.card-container');
+                const contentArea = cw.querySelector('.area-content');
+                const footerArea = cw.querySelector('.area-footer');
+                const ipLayer = cw.querySelector('.ip-layer');
 
-            card.innerHTML = `<div class="area-header"></div><div class="area-content md-content">${bodyHtml}</div><div class="ip-layer">${iconsHtml}</div>`;
-            card.appendChild(footer);
-            return card;
+                cw.className = `card-wrapper ${state.selectedCardIndex === i ? 'selected' : ''}`;
+                cw.onclick = () => selectCard(i);
+
+                container.className = `card-container style-${state.style}`;
+                container.style.setProperty('--theme', state.theme);
+
+                container.style.backgroundImage = getBackgroundStyle();
+                container.style.backgroundSize = 'cover';
+                if (state.useDefaultBg && !state.uploadedBaseImg) {
+                    container.style.backgroundSize = 'repeat';
+                    container.style.backgroundColor = '#f0f0f0';
+                } else if (!state.uploadedBaseImg) {
+                    container.style.backgroundColor = '#ffffff';
+                }
+
+                const isCover = (i === 0);
+                let html = '';
+                if (isCover) html = renderCover();
+                else {
+                    const pageItems = pages[i - 1] || [];
+                    html = renderContent(pageItems);
+                }
+
+                if (state.style === 'frame') html = `<div class="frame-border">${html}</div>`;
+
+                if (contentArea.innerHTML !== html) contentArea.innerHTML = html;
+
+                let fc = '';
+                if (state.footerMode === 'text') fc = `<div class="footer-pill text-sm">${state.adText}</div>`;
+                else if (state.footerMode === 'pagenum') fc = `<div class="footer-simple">${i + 1} / ${totalCards}</div>`;
+                if (footerArea.innerHTML !== fc) footerArea.innerHTML = fc;
+
+                const icons = state.cardIcons[i] || [];
+                const iconsHtml = icons.map((icon, idx) => {
+                    const isActive = state.activeIcon && state.activeIcon.cardIdx === i && state.activeIcon.iconIdx === idx;
+                    const activeClass = isActive ? 'active-icon' : '';
+                    const scale = icon.scale || 1.0;
+                    const isFlipped = icon.flipX || false;
+
+                    return `
+                    <div class="draggable-ip ${activeClass}" 
+                         style="transform: translate(${icon.x}px, ${icon.y}px) scale(${scale}) ${isFlipped ? 'scaleX(-1)' : ''};" 
+                         data-card-index="${i}" 
+                         data-icon-index="${idx}" 
+                         data-scale="${scale}"
+                         data-flip="${isFlipped}"
+                         onpointerdown="onIpStart(event)">
+                        <img src="${icon.src}" class="w-full pointer-events-none">
+                        <button class="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-1 shadow-md" onpointerdown="removeIcon(event, ${i}, ${idx})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                    </div>`;
+                }).join('');
+                if (ipLayer.innerHTML !== iconsHtml) ipLayer.innerHTML = iconsHtml;
+            });
+
+            lucide.createIcons();
+
+            if (options.scroll) {
+                const selectedEl = wrapper.children[state.selectedCardIndex];
+                if (selectedEl) {
+                    // Manual scroll calculation
+                    const container = wrapper;
+                    const cardTop = selectedEl.offsetTop;
+                    const cardHeight = selectedEl.offsetHeight;
+                    const containerHeight = container.clientHeight;
+
+                    const targetScroll = cardTop + (cardHeight / 2) - (containerHeight / 2);
+
+                    container.scrollTo({
+                        top: targetScroll,
+                        behavior: 'smooth'
+                    });
+                }
+            }
         }
 
-        function removeIcon(e, cIdx, iIdx) { e.stopPropagation(); state.cardIcons[cIdx].splice(iIdx, 1); renderGen(); }
+        function removeIcon(e, cIdx, iIdx) {
+            e.stopPropagation();
+            state.cardIcons[cIdx].splice(iIdx, 1);
+            if (state.activeIcon && state.activeIcon.cardIdx === cIdx && state.activeIcon.iconIdx === iIdx) {
+                state.activeIcon = null;
+            }
+            persistState();
+            scheduleRender({ scroll: false });
+        }
 
-        // --- Render Templates ---
+        // ... Render Templates (Same as v21) ...
         function renderCover() {
             const t = state.title.replace(/\n/g, '<br>');
             const a = state.author;
-            if (state.style === 'poster') {
-                return `<div class="h-full flex flex-col justify-center items-center text-center p-12"><div class="poster-box"><h1 class="text-[90px] font-black leading-none mb-10">${t}</h1><div class="w-full h-1 bg-white/30 mb-8"></div><p class="text-3xl font-bold tracking-widest uppercase">${a}</p></div></div>`;
+
+            const renderAuth = (htmlStr) => state.showAuthor ? htmlStr : '';
+            const coverPop = state.coverImg ? `<img src="${state.coverImg}" class="cover-pop" />` : '';
+            const swipeHint = `<div class="swipe-hint">Swipe ➔</div>`;
+
+            let content = '';
+
+            switch (state.style) {
+                case 'neon': // New
+                    content = `<div class="h-full flex flex-col justify-center p-16"><div class="neon-border"><h1 class="text-[90px] font-black leading-tight mb-8" style="text-shadow: 0 0 20px var(--theme);">${t}</h1>${renderAuth(`<p class="text-3xl font-bold tracking-[4px] uppercase" style="color:var(--theme); text-shadow:0 0 10px var(--theme);">@${a}</p>`)}</div></div>`;
+                    break;
+                case 'blob': // New
+                    content = `<div class="h-full flex flex-col justify-center items-center p-12"><div class="blob-shape"></div><div class="blob-content text-center"><h1 class="text-[90px] font-black leading-none mb-10 text-slate-800">${t}</h1>${renderAuth(`<div class="w-20 h-2 bg-slate-800 mx-auto mb-6"></div><p class="text-3xl font-bold tracking-widest text-slate-500">${a}</p>`)}</div></div>`;
+                    break;
+                case 'cutout': // New
+                    content = `<div class="h-full flex flex-col justify-center p-16"><h1 class="text-[100px] font-black leading-none mb-4 cutout-text">${t}</h1>${renderAuth(`<p class="text-4xl font-bold text-white/80 tracking-wide">${a}</p>`)}</div>`;
+                    break;
+                case 'checklist': // New
+                    const lines = state.content.split('\n');
+                    const items = lines.filter(l => l.trim().match(/^[-*]|\d+\./)).slice(0, 3);
+                    const listHtml = items.length ? items.map(i => `<div class="check-item"><div class="check-box"><i data-lucide="check" size="24"></i></div><span class="text-3xl font-bold">${i.replace(/^[-*]|\d+\.\s*/, '')}</span></div>`).join('') : '';
+                    content = `<div class="h-full flex flex-col justify-center p-16"><h1 class="text-[80px] font-black leading-tight text-slate-800 mb-12">${t}</h1>${listHtml ? `<div class="mb-10">${listHtml}</div>` : ''}${renderAuth(`<p class="text-2xl text-slate-400 font-bold">${a}</p>`)}</div>`;
+                    break;
+
+                case 'minimal': content = `<div class="h-full flex flex-col justify-center items-start p-10"><div class="min-line"></div><h1 class="text-[90px] font-black leading-tight text-slate-800 mb-8">${t}</h1>${renderAuth(`<p class="text-3xl text-slate-500 font-medium">@${a}</p>`)}</div>`; break;
+                case 'poster': content = `<div class="h-full flex flex-col justify-center items-center text-center p-12"><div class="poster-box"><h1 class="text-[90px] font-black leading-none mb-10" style="color: var(--theme);">${t}</h1>${renderAuth(`<div class="w-full h-1 bg-white/30 mb-8"></div><p class="text-3xl font-bold tracking-widest uppercase">${a}</p>`)}</div></div>`; break;
+                case 'memo': content = `<div class="h-full flex flex-col justify-center p-12"><div class="sticky-note"><h1 class="text-[80px] font-bold leading-tight mb-8">${t}</h1>${renderAuth(`<p class="text-3xl opacity-70">✍️ ${a}</p>`)}</div></div>`; break;
+                case 'journal': content = `<div class="h-full flex flex-col justify-center items-center p-12"><div class="journal-card text-center"><h1 class="text-[85px] font-bold text-[#be123c] leading-tight mb-6">${t}</h1>${renderAuth(`<p class="text-3xl text-[#fb7185] font-medium">By ${a}</p>`)}</div></div>`; break;
+                case 'glass': content = `<div class="h-full flex flex-col justify-center p-12"><div class="glass-panel"><h1 class="text-[85px] font-black text-slate-800 tracking-tight leading-none mb-8">${t}</h1>${renderAuth(`<p class="text-3xl font-bold text-slate-600">${a}</p>`)}</div></div>`; break;
+                case 'cyber': content = `<div class="h-full flex flex-col justify-center p-12"><div class="aura-box"><h1 class="text-[90px] font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500 leading-tight mb-6">${t}</h1>${renderAuth(`<p class="text-3xl text-slate-500 font-bold">${a}</p>`)}</div></div>`; break;
+                case 'luxury': content = `<div class="h-full flex flex-col justify-center items-center text-center p-16"><div class="mag-line"></div><h1 class="text-[90px] leading-tight mb-6 font-serif italic text-slate-800">${t}</h1>${renderAuth(`<div class="mag-line"></div><p class="text-2xl tracking-[4px] uppercase text-slate-500">${a}</p>`)}</div>`; break;
+                case 'pop': content = `<div class="h-full flex flex-col justify-center items-center"><div class="pop-card transform rotate-2"><h1 class="text-[80px] leading-none font-black text-slate-900">${t}</h1></div>${renderAuth(`<div class="mt-10 bg-black text-white px-8 py-3 rounded-full text-3xl font-bold transform -rotate-2">${a}</div>`)}</div>`; break;
+                case 'dry': content = `<div class="h-full flex flex-col justify-center p-12"><div class="floating-card"><h1 class="text-[85px] font-black leading-tight text-slate-800 mb-8">${t}</h1>${renderAuth(`<div class="flex items-center gap-4"><div class="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center text-2xl">👀</div><span class="text-2xl font-bold text-slate-500">${a}</span></div>`)}</div></div>`; break;
+                case 'paper': content = `<div class="h-full flex flex-col justify-center p-16"><div class="paper-sheet"><h1 class="text-[80px] font-bold mb-8 border-b-2 border-[#d6cfc7] pb-8 leading-tight">${t}</h1>${renderAuth(`<p class="text-3xl text-right italic font-serif text-[#78716c]">- ${a}</p>`)}</div></div>`; break;
+                case 'solid': content = `<div class="h-full flex flex-col justify-center p-16"><div class="solid-content"><h1 class="text-[100px] font-black leading-tight mb-8 drop-shadow-sm">${t}</h1>${renderAuth(`<p class="text-3xl font-medium opacity-90">${a}</p>`)}</div></div>`; break;
+                case 'brutal': content = `<div class="h-full flex flex-col justify-center p-10"><div class="outline-box"><h1 class="text-[90px] font-black leading-none mb-6 text-slate-900">${t}</h1>${renderAuth(`<div class="bg-black text-white px-6 py-2 inline-block text-2xl font-bold rounded-full">${a}</div>`)}</div></div>`; break;
+                case 'retro': content = `<div class="h-full flex flex-col justify-center p-16"><div class="film-frame"><h1 class="text-[80px] font-bold mb-8 leading-tight text-slate-800">${t}</h1>${renderAuth(`<p class="text-2xl font-serif italic text-slate-500">Captured by ${a}</p>`)}</div></div>`; break;
+                case 'dark': content = `<div class="h-full flex flex-col justify-center p-16"><div class="dark-card"><h1 class="text-[85px] font-bold leading-tight text-white mb-6">${t}</h1>${renderAuth(`<p class="text-2xl text-slate-400 font-medium">@${a}</p>`)}</div></div>`; break;
+                case 'comic': content = `<div class="h-full flex flex-col justify-center items-center"><div class="doodle-box"><h1 class="text-[85px] font-black leading-tight text-center text-slate-800">${t}</h1></div></div>`; break;
+                case 'elegant': content = `<div class="h-full p-16 flex flex-col justify-center"><h1 class="text-[90px] font-light leading-snug mb-8 text-slate-700">${t}</h1>${renderAuth(`<p class="text-xl tracking-[4px] uppercase text-slate-400 font-bold border-t border-slate-200 pt-8 inline-block w-full">${a}</p>`)}</div>`; break;
+                case 'playful': content = `<div class="h-full flex flex-col justify-center items-center"><div class="soft-blob"><h1 class="text-[85px] font-bold text-[#ea580c] leading-tight text-center">${t}</h1></div></div>`; break;
+                case 'tech': content = `<div class="h-full flex flex-col justify-center p-12"><div class="tech-card"><h1 class="text-[80px] font-bold leading-tight mb-6 text-slate-800">${t}</h1>${renderAuth(`<p class="text-xl text-slate-400 font-bold tracking-wide">INSIGHTS // ${a}</p>`)}</div></div>`; break;
+                case 'ink': content = `<div class="h-full flex flex-col justify-center items-center p-16"><div class="zen-circle">字</div><h1 class="text-[90px] font-bold leading-tight text-stone-700 text-center mb-8">${t}</h1>${renderAuth(`<p class="text-2xl text-stone-500 font-serif italic">${a}</p>`)}</div>`; break;
+                case 'boxy': content = `<div class="h-full flex flex-col justify-center p-16"><div class="grid-unit"><h1 class="text-[85px] font-black leading-tight text-slate-800 mb-6">${t}</h1>${renderAuth(`<p class="text-2xl text-slate-500 font-bold text-right"># ${a}</p>`)}</div></div>`; break;
+                case 'frame': content = `<div class="h-full p-16"><div class="frame-border justify-center"><h1 class="text-[90px] font-black leading-tight mb-12 text-slate-800 text-center">${t}</h1>${renderAuth(`<div class="flex justify-center"><div class="px-8 py-3 bg-slate-100 rounded-full text-2xl font-bold text-slate-500">${a}</div></div>`)}</div></div>`; break;
+                default: content = `<div class="h-full flex flex-col justify-center"><h1 class="text-[90px] font-black">${t}</h1></div>`;
             }
-            return `<div class="h-full flex flex-col justify-center items-start p-10"><div class="min-line"></div><h1 class="text-[90px] font-black leading-tight text-slate-800 mb-8">${t}</h1><p class="text-3xl text-slate-500 font-medium">@${a}</p></div>`;
+
+            return `<div class="relative w-full h-full">${content}${coverPop}${swipeHint}</div>`;
         }
 
         function renderContent(items) {
+            if (!items) return '';
             const c = items.join('');
             if (state.style === 'poster') return `<div class="poster-box">${c}</div>`;
+            if (state.style === 'dry') return `<div class="floating-card">${c}</div>`;
+            if (state.style === 'memo') return `<div class="sticky-note">${c}</div>`;
+            if (state.style === 'journal') return `<div class="journal-card">${c}</div>`;
+            if (state.style === 'cyber') return `<div class="aura-box">${c}</div>`;
+            if (state.style === 'pop') return `<div class="pop-card">${c}</div>`;
+            if (state.style === 'glass') return `<div class="glass-panel">${c}</div>`;
+            if (state.style === 'paper') return `<div class="paper-sheet">${c}</div>`;
+            if (state.style === 'solid') return `<div class="solid-content">${c}</div>`;
+            if (state.style === 'brutal') return `<div class="outline-box">${c}</div>`;
+            if (state.style === 'retro') return `<div class="film-frame">${c}</div>`;
+            if (state.style === 'dark') return `<div class="dark-card">${c}</div>`;
+            if (state.style === 'comic') return `<div class="doodle-box">${c}</div>`;
+            if (state.style === 'elegant') return `<div class="air-box">${c}</div>`;
+            if (state.style === 'playful') return `<div class="soft-blob">${c}</div>`;
+            if (state.style === 'tech') return `<div class="tech-card">${c}</div>`;
+            if (state.style === 'ink') return `<div class="ink-content">${c}</div>`;
+            if (state.style === 'boxy') return `<div class="grid-unit">${c}</div>`;
+            if (state.style === 'neon') return `<div class="neon-border">${c}</div>`;
+            if (state.style === 'checklist') return `<div class="px-4">${c}</div>`;
+            if (state.style === 'cutout') return `<div class="cutout-text text-5xl leading-tight">${c}</div>`;
             return `<div>${c}</div>`;
         }
 
-        function onIpStart(e) { if (e.target.closest('button')) return; dragTarget = e.currentTarget; startX = (e.touches ? e.touches[0] : e).clientX; startY = (e.touches ? e.touches[0] : e).clientY; initialLeft = parseFloat(dragTarget.style.left) || 0; initialTop = parseFloat(dragTarget.style.top) || 0; dragTarget.style.cursor = 'grabbing'; dragTarget.style.zIndex = 1000; e.stopPropagation(); if (e.cancelable) e.preventDefault(); }
-        function onGlobalMouseMove(e) { if (!dragTarget) return; const evt = e.touches ? e.touches[0] : e; dragTarget.style.left = (initialLeft + (evt.clientX - startX) / state.previewScale) + 'px'; dragTarget.style.top = (initialTop + (evt.clientY - startY) / state.previewScale) + 'px'; }
-        function onGlobalMouseUp() { if (!dragTarget) return; const c = parseInt(dragTarget.getAttribute('data-card-index')), i = parseInt(dragTarget.getAttribute('data-icon-index')); if (state.cardIcons[c]?.[i]) { state.cardIcons[c][i].x = parseFloat(dragTarget.style.left); state.cardIcons[c][i].y = parseFloat(dragTarget.style.top); } dragTarget.style.cursor = 'grab'; dragTarget.style.zIndex = ''; dragTarget = null; }
+        // --- Pointer Event Drag Logic (Unified & Optimized) ---
+        function onGlobalPointerMove(e) {
+            if (!dragTarget) return;
+            const dx = (e.clientX - startX) / state.previewScale;
+            const dy = (e.clientY - startY) / state.previewScale;
+
+            const scale = dragTarget.dataset.scale || 1;
+            const isFlipped = dragTarget.dataset.flip === 'true';
+            const flipTransform = isFlipped ? 'scaleX(-1)' : '';
+
+            dragTarget.style.transform = `translate(${initialX + dx}px, ${initialY + dy}px) scale(${scale}) ${flipTransform}`;
+        }
+
+        function onIpStart(e) {
+            if (e.target.closest('button')) return;
+            e.preventDefault();
+            dragTarget = e.currentTarget;
+            startX = e.clientX;
+            startY = e.clientY;
+
+            const cIdx = parseInt(dragTarget.getAttribute('data-card-index'));
+            const iIdx = parseInt(dragTarget.getAttribute('data-icon-index'));
+            state.activeIcon = { cardIdx: cIdx, iconIdx: iIdx };
+
+            if (state.cardIcons[cIdx] && state.cardIcons[cIdx][iIdx]) {
+                const scale = state.cardIcons[cIdx][iIdx].scale || 1.0;
+                const slider = document.getElementById('icon-scale-slider');
+                if (slider) slider.value = scale;
+                document.getElementById('icon-scale-val').innerText = parseFloat(scale).toFixed(1) + 'x';
+                dragTarget.dataset.scale = scale;
+                dragTarget.dataset.flip = state.cardIcons[cIdx][iIdx].flipX;
+            }
+
+            renderGen({ scroll: false });
+
+            const newTarget = document.querySelector(`.draggable-ip[data-card-index="${cIdx}"][data-icon-index="${iIdx}"]`);
+            if (newTarget) dragTarget = newTarget;
+
+            const style = window.getComputedStyle(dragTarget);
+            const matrix = new WebKitCSSMatrix(style.transform);
+            initialX = matrix.m41;
+            initialY = matrix.m42;
+
+            dragTarget.style.cursor = 'grabbing';
+            dragTarget.style.zIndex = 1000;
+            dragTarget.setPointerCapture(e.pointerId);
+        }
+
+        function onGlobalPointerUp(e) {
+            if (!dragTarget) return;
+
+            const cIdx = parseInt(dragTarget.getAttribute('data-card-index'));
+            const iIdx = parseInt(dragTarget.getAttribute('data-icon-index'));
+
+            const style = window.getComputedStyle(dragTarget);
+            const matrix = new WebKitCSSMatrix(style.transform);
+
+            if (state.cardIcons[cIdx] && state.cardIcons[cIdx][iIdx]) {
+                state.cardIcons[cIdx][iIdx].x = matrix.m41;
+                state.cardIcons[cIdx][iIdx].y = matrix.m42;
+                persistState();
+            }
+
+            dragTarget.style.cursor = 'grab';
+            dragTarget.style.zIndex = '';
+            dragTarget.releasePointerCapture(e.pointerId);
+            dragTarget = null;
+        }
 
         function handleExport() { state.mode === 'gen' ? downloadZip() : downloadMerger(); }
 
@@ -1307,35 +1901,21 @@
             const progress = document.getElementById('progress-val');
             const cardEl = document.getElementById('merger-card');
             const overlayEl = document.getElementById('merge-overlay-el');
-
             overlay.style.display = 'flex';
-
             try {
                 if (state.mergeOverlays.length <= 1) {
-                    const c = await html2canvas(cardEl, {
-                        scale: 1, width: APP_CONFIG.width, height: APP_CONFIG.height, useCORS: true, backgroundColor: '#ffffff'
-                    });
-                    const a = document.createElement('a');
-                    a.download = `Merger_${Date.now()}.png`;
-                    a.href = c.toDataURL();
-                    a.click();
-                }
-                else {
+                    const c = await html2canvas(cardEl, { scale: 1, width: APP_CONFIG.width, height: APP_CONFIG.height, useCORS: true, backgroundColor: '#ffffff' });
+                    const a = document.createElement('a'); a.download = `Merger_${Date.now()}.png`; a.href = c.toDataURL(); a.click();
+                } else {
                     const zip = new JSZip();
                     const originalIndex = state.currentMergeIndex;
-
                     for (let i = 0; i < state.mergeOverlays.length; i++) {
                         progress.innerText = `Processing ${i + 1} / ${state.mergeOverlays.length}`;
                         state.currentMergeIndex = i;
                         overlayEl.src = state.mergeOverlays[i];
-                        await new Promise(resolve => {
-                            if (overlayEl.complete) resolve();
-                            else overlayEl.onload = resolve;
-                        });
+                        await new Promise(resolve => { if (overlayEl.complete) resolve(); else overlayEl.onload = resolve; });
                         await new Promise(r => setTimeout(r, 50));
-                        const canvas = await html2canvas(cardEl, {
-                            scale: 1, width: APP_CONFIG.width, height: APP_CONFIG.height, useCORS: true, backgroundColor: '#ffffff'
-                        });
+                        const canvas = await html2canvas(cardEl, { scale: 1, width: APP_CONFIG.width, height: APP_CONFIG.height, useCORS: true, backgroundColor: '#ffffff' });
                         const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
                         zip.file(`Merger_${i + 1}.png`, blob);
                     }
@@ -1345,12 +1925,7 @@
                     const content = await zip.generateAsync({ type: "blob" });
                     saveAs(content, `Batch_Merger_${Date.now()}.zip`);
                 }
-            } catch (e) {
-                console.error(e);
-                alert('Error generating image');
-            } finally {
-                overlay.style.display = 'none';
-            }
+            } catch (e) { console.error(e); alert('Error generating image'); } finally { overlay.style.display = 'none'; }
         }
 
         async function downloadZip() {
@@ -1360,28 +1935,21 @@
             await new Promise(r => setTimeout(r, 100));
             const zip = new JSZip();
             const cards = document.querySelectorAll('.card-wrapper');
-
             for (let i = 0; i < cards.length; i++) {
                 if (cards[i].closest('#merger-wrapper')) continue;
-
                 progress.innerText = `Card ${i + 1}`;
                 const el = cards[i].querySelector('.card-container').cloneNode(true);
                 el.style.transform = 'none'; el.style.position = 'fixed'; el.style.top = '0'; el.style.left = '-9999px';
-                el.style.width = APP_CONFIG.width + 'px';
-                el.style.height = APP_CONFIG.height + 'px';
+                el.style.width = APP_CONFIG.width + 'px'; el.style.height = APP_CONFIG.height + 'px';
                 el.querySelectorAll('button').forEach(b => b.remove());
 
-                let bg = '#ffffff';
-                if (['poster'].includes(state.style)) bg = '#FCD34D';
+                // Remove active borders for export
+                el.querySelectorAll('.active-icon').forEach(ic => ic.classList.remove('active-icon', 'outline'));
 
-                if (state.useDefaultBg && !state.uploadedBaseImg) {
-                    el.style.backgroundImage = `url('${APP_CONFIG.bgUrl}')`;
-                    el.style.backgroundSize = 'repeat';
-                }
-
+                let bg = '#ffffff'; if (['poster'].includes(state.style)) bg = '#FCD34D';
+                if (state.useDefaultBg && !state.uploadedBaseImg) { el.style.backgroundImage = `url('${APP_CONFIG.bgUrl}')`; el.style.backgroundSize = 'repeat'; }
                 el.style.backgroundColor = bg;
                 document.body.appendChild(el);
-
                 const c = await html2canvas(el, { scale: 1, width: APP_CONFIG.width, height: APP_CONFIG.height, useCORS: true, backgroundColor: bg });
                 document.body.removeChild(el);
                 zip.file(`${i + 1}.png`, await new Promise(r => c.toBlob(r)));
@@ -1389,6 +1957,43 @@
             saveAs(await zip.generateAsync({ type: 'blob' }), `VisualClone_${Date.now()}.zip`);
             overlay.style.display = 'none';
         }
+
+        // --- JSON Export/Import ---
+        function exportJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "visual_clone_project.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const loadedState = JSON.parse(e.target.result);
+                    Object.assign(state, loadedState);
+                    persistState();
+                    init();
+                    alert('專案匯入成功！');
+                } catch (err) {
+                    alert('無效的專案檔案');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function resetProject() {
+            if (confirm('確定要重置專案嗎？所有內容將會清空。')) {
+                localStorage.removeItem("visual_clone_project");
+                location.reload();
+            }
+        }
+
         window.onload = init;
     </script>
 </body>
