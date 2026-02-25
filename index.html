@@ -1921,28 +1921,60 @@
             const progress = document.getElementById('progress-val');
             overlay.style.display = 'flex';
             await new Promise(r => setTimeout(r, 100));
+            
             const zip = new JSZip();
             const cards = document.querySelectorAll('.card-wrapper');
+            
             for (let i = 0; i < cards.length; i++) {
                 if (cards[i].closest('#merger-wrapper')) continue;
-                progress.innerText = `Card ${i + 1}`;
+                progress.innerText = `正在處理第 ${i + 1} 張卡片...`;
+                
+                // 1. 克隆節點
                 const el = cards[i].querySelector('.card-container').cloneNode(true);
-                el.style.transform = 'none'; el.style.position = 'fixed'; el.style.top = '0'; el.style.left = '-9999px';
-                el.style.width = APP_CONFIG.width + 'px'; el.style.height = APP_CONFIG.height + 'px';
+                
+                // 2. 強制設定導出版的樣式，確保它是白底且大小正確
+                Object.assign(el.style, {
+                    transform: 'none',
+                    position: 'fixed',
+                    top: '0',
+                    left: '-9999px',
+                    width: APP_CONFIG.width + 'px',
+                    height: APP_CONFIG.height + 'px',
+                    display: 'flex',
+                    backgroundColor: '#ffffff', // 強制背景為白色
+                    backgroundImage: state.uploadedBaseImg ? `url(${state.uploadedBaseImg})` : (state.useDefaultBg ? `url('${APP_CONFIG.bgUrl}')` : 'none'),
+                    backgroundSize: state.uploadedBaseImg ? 'cover' : 'repeat',
+                    zIndex: '9999'
+                });
+
+                // 3. 清理不需要的按鈕（刪除貼紙按鈕等）
                 el.querySelectorAll('button').forEach(b => b.remove());
+                el.querySelectorAll('.active-icon').forEach(ic => {
+                    ic.classList.remove('active-icon');
+                    ic.style.outline = 'none';
+                });
 
-                // Remove active borders for export
-                el.querySelectorAll('.active-icon').forEach(ic => ic.classList.remove('active-icon', 'outline'));
-
-                let bg = '#ffffff'; if (['poster'].includes(state.style)) bg = '#FCD34D';
-                if (state.useDefaultBg && !state.uploadedBaseImg) { el.style.backgroundImage = `url('${APP_CONFIG.bgUrl}')`; el.style.backgroundSize = 'repeat'; }
-                el.style.backgroundColor = bg;
                 document.body.appendChild(el);
-                const c = await html2canvas(el, { scale: 1, width: APP_CONFIG.width, height: APP_CONFIG.height, useCORS: true, backgroundColor: bg });
+
+                // 4. 關鍵：html2canvas 設定
+                const canvas = await html2canvas(el, {
+                    scale: 1,
+                    width: APP_CONFIG.width,
+                    height: APP_CONFIG.height,
+                    useCORS: true,           // 允許跨域圖片
+                    backgroundColor: '#ffffff', // 確保 canvas 底層是白色
+                    logging: false,
+                    allowTaint: true
+                });
+
                 document.body.removeChild(el);
-                zip.file(`${i + 1}.png`, await new Promise(r => c.toBlob(r)));
+                
+                const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+                zip.file(`${i + 1}.png`, blob);
             }
-            saveAs(await zip.generateAsync({ type: 'blob' }), `VisualClone_${Date.now()}.zip`);
+            
+            const content = await zip.generateAsync({ type: 'blob' });
+            saveAs(content, `VisualClone_${Date.now()}.zip`);
             overlay.style.display = 'none';
         }
 
