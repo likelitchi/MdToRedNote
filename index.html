@@ -699,17 +699,6 @@
             z-index: 20;
         }
 
-        .swipe-hint {
-            position: absolute;
-            bottom: 40px;
-            right: 40px;
-            font-weight: 900;
-            font-size: 24px;
-            color: rgba(0, 0, 0, 0.3);
-            animation: bounce 2s infinite;
-            pointer-events: none;
-        }
-
         @keyframes bounce {
 
             0%,
@@ -1750,7 +1739,6 @@
 
             const renderAuth = (htmlStr) => state.showAuthor ? htmlStr : '';
             const coverPop = state.coverImg ? `<img src="${state.coverImg}" class="cover-pop" />` : '';
-            const swipeHint = `<div class="swipe-hint">Swipe ➔</div>`;
 
             let content = '';
 
@@ -1795,7 +1783,7 @@
                 default: content = `<div class="h-full flex flex-col justify-center"><h1 class="text-[90px] font-black">${t}</h1></div>`;
             }
 
-            return `<div class="relative w-full h-full">${content}${coverPop}${swipeHint}</div>`;
+            return `<div class="relative w-full h-full">${content}${coverPop}</div>`;
         }
 
         function renderContent(items) {
