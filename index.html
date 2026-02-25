@@ -1921,18 +1921,27 @@
             const progress = document.getElementById('progress-val');
             overlay.style.display = 'flex';
             await new Promise(r => setTimeout(r, 100));
-            
+
             const zip = new JSZip();
             const cards = document.querySelectorAll('.card-wrapper');
-            
+
             for (let i = 0; i < cards.length; i++) {
                 if (cards[i].closest('#merger-wrapper')) continue;
                 progress.innerText = `正在處理第 ${i + 1} 張卡片...`;
-                
-                // 1. 克隆節點
-                const el = cards[i].querySelector('.card-container').cloneNode(true);
-                
-                // 2. 強制設定導出版的樣式，確保它是白底且大小正確
+
+                const originalContainer = cards[i].querySelector('.card-container');
+                const el = originalContainer.cloneNode(true);
+
+                // --- 修復 1：解決背景變灰色的問題 ---
+                // 強制將預覽區的灰色 (#f0f0f0) 覆寫為純白 (#ffffff)
+                let exportBgColor = "#ffffff"; 
+                let exportBgImage = state.uploadedBaseImg ? `url(${state.uploadedBaseImg})` : (state.useDefaultBg ? `url('${APP_CONFIG.bgUrl}')` : 'none');
+
+                // 如果是「純色 (solid)」或「鏤空 (cutout)」風格，底色應保留為主題色
+                if (state.style === 'solid' || state.style === 'cutout') {
+                    exportBgColor = state.theme;
+                }
+
                 Object.assign(el.style, {
                     transform: 'none',
                     position: 'fixed',
@@ -1940,14 +1949,26 @@
                     left: '-9999px',
                     width: APP_CONFIG.width + 'px',
                     height: APP_CONFIG.height + 'px',
-                    display: 'flex',
-                    backgroundColor: '#ffffff', // 強制背景為白色
-                    backgroundImage: state.uploadedBaseImg ? `url(${state.uploadedBaseImg})` : (state.useDefaultBg ? `url('${APP_CONFIG.bgUrl}')` : 'none'),
+                    backgroundColor: exportBgColor,
+                    backgroundImage: exportBgImage,
                     backgroundSize: state.uploadedBaseImg ? 'cover' : 'repeat',
+                    display: 'flex',
                     zIndex: '9999'
                 });
 
-                // 3. 清理不需要的按鈕（刪除貼紙按鈕等）
+                // 確保 CSS 變數正確傳入截圖節點
+                el.style.setProperty('--theme', state.theme);
+
+                // --- 修復 2：解決「撞色 (pop)」內部變紅色的 html2canvas Bug ---
+                // 給 box-shadow 加上 0.5px 的模糊度，視覺上依舊是實色邊緣，但能破解陰影填滿內部的渲染 Bug
+                if (state.style === 'pop') {
+                    el.querySelectorAll('.pop-card').forEach(card => {
+                        card.style.backgroundColor = '#ffffff'; // 確保內部區塊是純白底
+                        card.style.boxShadow = `12px 12px 0.5px ${state.theme}`; // 關鍵：0.5px 模糊度
+                    });
+                }
+
+                // 移除多餘的 UI 控制元素 (如貼紙刪除按鈕)
                 el.querySelectorAll('button').forEach(b => b.remove());
                 el.querySelectorAll('.active-icon').forEach(ic => {
                     ic.classList.remove('active-icon');
@@ -1956,25 +1977,28 @@
 
                 document.body.appendChild(el);
 
-                // 4. 關鍵：html2canvas 設定
-                const canvas = await html2canvas(el, {
-                    scale: 1,
-                    width: APP_CONFIG.width,
-                    height: APP_CONFIG.height,
-                    useCORS: true,           // 允許跨域圖片
-                    backgroundColor: '#ffffff', // 確保 canvas 底層是白色
-                    logging: false,
-                    allowTaint: true
-                });
+                try {
+                    const canvas = await html2canvas(el, {
+                        scale: 1,
+                        width: APP_CONFIG.width,
+                        height: APP_CONFIG.height,
+                        useCORS: true,
+                        backgroundColor: exportBgColor,
+                        allowTaint: true,
+                        logging: false
+                    });
 
-                document.body.removeChild(el);
-                
-                const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-                zip.file(`${i + 1}.png`, blob);
+                    const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+                    zip.file(`${i + 1}.png`, blob);
+                } catch (err) {
+                    console.error("導出錯誤:", err);
+                } finally {
+                    document.body.removeChild(el); // 確保每次都清理掉隱藏節點
+                }
             }
-            
+
             const content = await zip.generateAsync({ type: 'blob' });
-            saveAs(content, `VisualClone_${Date.now()}.zip`);
+            saveAs(content, `VisualSuite_${Date.now()}.zip`);
             overlay.style.display = 'none';
         }
 
