@@ -1882,6 +1882,33 @@
             dragTarget = null;
         }
 
+        function syncFormValuesForExport(sourceRoot, clonedRoot) {
+            const sourceFields = sourceRoot.querySelectorAll('textarea, input, select');
+            const clonedFields = clonedRoot.querySelectorAll('textarea, input, select');
+
+            sourceFields.forEach((sourceField, index) => {
+                const clonedField = clonedFields[index];
+                if (!clonedField) return;
+
+                // textarea / input 的即時 value 不是 cloneNode(true) 一定會帶到，手動同步避免「只有圖片沒有文字」
+                if (sourceField.tagName === 'TEXTAREA' || sourceField.tagName === 'INPUT') {
+                    clonedField.value = sourceField.value;
+                    clonedField.setAttribute('value', sourceField.value || '');
+
+                    if (sourceField.type === 'checkbox' || sourceField.type === 'radio') {
+                        clonedField.checked = sourceField.checked;
+                    }
+                }
+
+                if (sourceField.tagName === 'SELECT') {
+                    clonedField.value = sourceField.value;
+                    Array.from(clonedField.options || []).forEach(opt => {
+                        opt.selected = (opt.value === sourceField.value);
+                    });
+                }
+            });
+        }
+
         function handleExport() { state.mode === 'gen' ? downloadZip() : downloadMerger(); }
 
         async function downloadMerger() {
@@ -1922,6 +1949,11 @@
             overlay.style.display = 'flex';
             await new Promise(r => setTimeout(r, 100));
 
+            // 等待字型準備完成，避免 html2canvas 偶發抓不到文字
+            if (document.fonts && document.fonts.ready) {
+                try { await document.fonts.ready; } catch (_) { }
+            }
+
             const zip = new JSZip();
             const cards = document.querySelectorAll('.card-wrapper');
 
@@ -1931,6 +1963,9 @@
 
                 const originalContainer = cards[i].querySelector('.card-container');
                 const el = originalContainer.cloneNode(true);
+
+                // 同步表單欄位的即時值（textarea/input/select），避免導出時文字遺失
+                syncFormValuesForExport(originalContainer, el);
 
                 // --- 修復 1：解決背景變灰色的問題 ---
                 // 強制將預覽區的灰色 (#f0f0f0) 覆寫為純白 (#ffffff)
@@ -1976,6 +2011,9 @@
                 });
 
                 document.body.appendChild(el);
+                // 強制排版並稍等一個 tick，讓瀏覽器完成文字繪製
+                void el.offsetHeight;
+                await new Promise(r => setTimeout(r, 30));
 
                 try {
                     const canvas = await html2canvas(el, {
