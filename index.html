@@ -570,6 +570,108 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
         }
 
+        .style-nostalgia {
+            font-family: 'Noto Serif TC';
+            background: #f5ebe0;
+            color: #5b4636;
+        }
+
+        .style-nostalgia .nostalgia-frame {
+            border: 1px solid #c6ac8f;
+            background: #fffdf7;
+            box-shadow: 0 10px 30px rgba(90, 70, 54, 0.12);
+            padding: 44px;
+            margin-bottom: 24px;
+        }
+
+        .style-magazine {
+            font-family: 'Noto Sans TC';
+            background: #f8fafc;
+            color: #0f172a;
+        }
+
+        .style-magazine .magazine-grid {
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            padding: 44px;
+            margin-bottom: 24px;
+            box-shadow: 0 12px 24px -16px rgba(15, 23, 42, 0.35);
+        }
+
+        .style-tutorial {
+            font-family: 'Noto Sans TC';
+            background: #eff6ff;
+            color: #1e3a8a;
+        }
+
+        .style-tutorial .tutorial-stepper {
+            background: #fff;
+            border-left: 8px solid #3b82f6;
+            border-radius: 0 16px 16px 0;
+            padding: 42px;
+            margin-bottom: 22px;
+        }
+
+        .style-review {
+            font-family: 'Noto Sans TC';
+            background: #ecfeff;
+            color: #164e63;
+        }
+
+        .style-review .review-panel {
+            background: linear-gradient(145deg, #ffffff 0%, #f0fdfa 100%);
+            border: 1px solid #a5f3fc;
+            border-radius: 18px;
+            padding: 42px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 26px -16px rgba(8, 145, 178, 0.45);
+        }
+
+        .style-painpoint {
+            font-family: 'Noto Sans TC';
+            background: #fff1f2;
+            color: #881337;
+        }
+
+        .style-painpoint .painpoint-card {
+            background: #fff;
+            border: 2px solid #fda4af;
+            border-radius: 18px;
+            padding: 42px;
+            margin-bottom: 24px;
+            box-shadow: 0 14px 30px -20px rgba(190, 24, 93, 0.55);
+        }
+
+        .style-immersive {
+            font-family: 'Noto Sans TC';
+            background: linear-gradient(180deg, #f5f3ff 0%, #ede9fe 100%);
+            color: #4c1d95;
+        }
+
+        .style-immersive .immersive-vlog {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid #c4b5fd;
+            border-radius: 24px;
+            padding: 44px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(4px);
+        }
+
+        .style-visualflow {
+            font-family: 'Noto Sans TC';
+            background: radial-gradient(circle at top, #cffafe 0%, #f0f9ff 45%, #f8fafc 100%);
+            color: #0f172a;
+        }
+
+        .style-visualflow .visualflow-mist {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            border-radius: 24px;
+            padding: 44px;
+            margin-bottom: 24px;
+            box-shadow: 0 18px 32px -24px rgba(6, 182, 212, 0.65);
+        }
+
         .style-neon {
             font-family: 'Noto Sans TC';
             background: #111;
@@ -1122,7 +1224,15 @@
             { id: 'ink', name: '學術墨感', icon: 'pen-tool' },
             { id: 'frame', name: '商務框架', icon: 'square' },
             { id: 'paper', name: '雜誌排版', icon: 'newspaper' },
-            { id: 'dry', name: '理性卡片', icon: 'credit-card' }
+            { id: 'dry', name: '理性卡片', icon: 'credit-card' },
+            // 內容策略型・轉化導向
+            { id: 'nostalgia', name: '懷舊風', icon: 'history' },
+            { id: 'magazine', name: '雜誌感', icon: 'book-open' },
+            { id: 'tutorial', name: '教程化', icon: 'route' },
+            { id: 'review', name: '測評風', icon: 'line-chart' },
+            { id: 'painpoint', name: '痛點法', icon: 'target' },
+            { id: 'immersive', name: '沉浸式', icon: 'clapperboard' },
+            { id: 'visualflow', name: '視覺流', icon: 'palette' }
         ];
 
         const themes = ["#6366f1", "#8b5cf6", "#14b8a6", "#2563eb", "#0f172a", "#f59e0b", "#ec4899"];
@@ -1770,6 +1880,13 @@
                 case 'ink': content = `<div class="h-full flex flex-col justify-center items-center p-16"><div class="zen-circle">字</div><h1 class="text-[90px] font-bold leading-tight text-stone-700 text-center mb-8">${t}</h1>${renderAuth(`<p class="text-2xl text-stone-500 font-serif italic">${a}</p>`)}</div>`; break;
                 case 'boxy': content = `<div class="h-full flex flex-col justify-center p-16"><div class="grid-unit"><h1 class="text-[85px] font-black leading-tight text-slate-800 mb-6">${t}</h1>${renderAuth(`<p class="text-2xl text-slate-500 font-bold text-right"># ${a}</p>`)}</div></div>`; break;
                 case 'frame': content = `<div class="h-full p-16"><div class="frame-border justify-center"><h1 class="text-[90px] font-black leading-tight mb-12 text-slate-800 text-center">${t}</h1>${renderAuth(`<div class="flex justify-center"><div class="px-8 py-3 bg-slate-100 rounded-full text-2xl font-bold text-slate-500">${a}</div></div>`)}</div></div>`; break;
+                case 'nostalgia': content = `<div class="h-full flex flex-col justify-center p-16"><div class="nostalgia-frame"><h1 class="text-[84px] font-bold leading-tight text-[#5b4636] mb-8">${t}</h1>${renderAuth(`<p class="text-2xl font-serif italic text-[#8b6f58]">記錄者：${a}</p>`)}</div></div>`; break;
+                case 'magazine': content = `<div class="h-full flex flex-col justify-center p-16"><div class="magazine-grid"><p class="uppercase tracking-[6px] text-lg text-slate-400 mb-4">Featured Story</p><h1 class="text-[84px] font-black leading-tight text-slate-900 mb-8">${t}</h1>${renderAuth(`<p class="text-2xl text-slate-500 font-semibold">${a} · Editorial Team</p>`)}</div></div>`; break;
+                case 'tutorial': content = `<div class="h-full flex flex-col justify-center p-16"><div class="tutorial-stepper"><p class="text-xl font-bold tracking-[4px] uppercase text-blue-500 mb-6">How-To Playbook</p><h1 class="text-[82px] font-black leading-tight text-blue-900 mb-8">${t}</h1>${renderAuth(`<p class="text-2xl text-blue-700 font-semibold">由 ${a} 拆解重點步驟</p>`)}</div></div>`; break;
+                case 'review': content = `<div class="h-full flex flex-col justify-center p-16"><div class="review-panel"><p class="text-xl font-bold tracking-[4px] uppercase text-cyan-600 mb-6">Benchmark & Findings</p><h1 class="text-[82px] font-black leading-tight text-cyan-900 mb-8">${t}</h1>${renderAuth(`<p class="text-2xl text-cyan-800 font-semibold">測評人：${a}</p>`)}</div></div>`; break;
+                case 'painpoint': content = `<div class="h-full flex flex-col justify-center p-16"><div class="painpoint-card"><p class="text-xl font-bold tracking-[4px] uppercase text-rose-500 mb-6">Pain Point Fix</p><h1 class="text-[82px] font-black leading-tight text-rose-900 mb-8">${t}</h1>${renderAuth(`<p class="text-2xl text-rose-700 font-semibold">${a} 給你直接答案</p>`)}</div></div>`; break;
+                case 'immersive': content = `<div class="h-full flex flex-col justify-center p-16"><div class="immersive-vlog"><p class="text-xl font-bold tracking-[4px] uppercase text-violet-500 mb-6">Vlog Moment</p><h1 class="text-[82px] font-black leading-tight text-violet-900 mb-8">${t}</h1>${renderAuth(`<p class="text-2xl text-violet-700 font-semibold">跟著 ${a} 一起沉浸</p>`)}</div></div>`; break;
+                case 'visualflow': content = `<div class="h-full flex flex-col justify-center p-16"><div class="visualflow-mist"><p class="text-xl font-bold tracking-[4px] uppercase text-cyan-500 mb-6">Aesthetic Flow</p><h1 class="text-[82px] font-black leading-tight text-slate-900 mb-8">${t}</h1>${renderAuth(`<p class="text-2xl text-slate-600 font-semibold">${a} 的氛圍選片</p>`)}</div></div>`; break;
                 default: content = `<div class="h-full flex flex-col justify-center"><h1 class="text-[90px] font-black">${t}</h1></div>`;
             }
 
@@ -1790,6 +1907,13 @@
             if (state.style === 'solid') return `<div class="solid-content">${c}</div>`;
             if (state.style === 'brutal') return `<div class="outline-box">${c}</div>`;
             if (state.style === 'retro') return `<div class="film-frame">${c}</div>`;
+            if (state.style === 'nostalgia') return `<div class="nostalgia-frame">${c}</div>`;
+            if (state.style === 'magazine') return `<div class="magazine-grid">${c}</div>`;
+            if (state.style === 'tutorial') return `<div class="tutorial-stepper">${c}</div>`;
+            if (state.style === 'review') return `<div class="review-panel">${c}</div>`;
+            if (state.style === 'painpoint') return `<div class="painpoint-card">${c}</div>`;
+            if (state.style === 'immersive') return `<div class="immersive-vlog">${c}</div>`;
+            if (state.style === 'visualflow') return `<div class="visualflow-mist">${c}</div>`;
             if (state.style === 'dark') return `<div class="dark-card">${c}</div>`;
             if (state.style === 'comic') return `<div class="doodle-box">${c}</div>`;
             if (state.style === 'elegant') return `<div class="air-box">${c}</div>`;
