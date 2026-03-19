@@ -1012,6 +1012,14 @@
                         <div class="grid grid-cols-3 gap-2" id="style-selector"></div>
                     </section>
                     <section class="space-y-3">
+                        <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">1.5 風格場景（可選）</h3>
+                        <div class="flex items-center justify-between px-0.5">
+                            <p class="text-[11px] text-slate-500">只改呈現語氣，不動默認文案</p>
+                            <span id="scene-hint" class="text-[10px] text-slate-400">默認</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2" id="scene-selector"></div>
+                    </section>
+                    <section class="space-y-3">
                         <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">2. 素材設定</h3>
                         <div class="grid grid-cols-2 gap-3">
                             <label
@@ -1235,6 +1243,27 @@
             { id: 'visualflow', name: '視覺流', icon: 'palette' }
         ];
 
+        const sceneConfigs = [
+            { id: 'default', name: '默認', hint: '保持原風格輸出', badge: '' },
+            { id: 'newbie', name: '新手版', hint: '步驟更易懂', badge: '新手友好' },
+            { id: 'dataheavy', name: '數據重', hint: '強調指標與對比', badge: '數據背書' },
+            { id: 'direct', name: '直給版', hint: '先答案後展開', badge: '直接答案' },
+            { id: 'healing', name: '治癒系', hint: '慢節奏與情緒價值', badge: '情緒價值' },
+            { id: 'aesthetic', name: '氛圍版', hint: '美感與留白優先', badge: '氛圍營造' },
+            { id: 'pro', name: '專業版', hint: '結構更統一', badge: '專業統一' },
+            { id: 'retrofilm', name: '膠片感', hint: '懷舊復古質感', badge: '復古濾鏡' }
+        ];
+
+        const sceneMatrix = {
+            nostalgia: ['default', 'retrofilm', 'healing'],
+            magazine: ['default', 'pro', 'aesthetic'],
+            tutorial: ['default', 'newbie', 'direct'],
+            review: ['default', 'dataheavy', 'pro'],
+            painpoint: ['default', 'direct', 'newbie'],
+            immersive: ['default', 'healing', 'aesthetic'],
+            visualflow: ['default', 'aesthetic', 'healing']
+        };
+
         const themes = ["#6366f1", "#8b5cf6", "#14b8a6", "#2563eb", "#0f172a", "#f59e0b", "#ec4899"];
 
         // --- Core State ---
@@ -1247,6 +1276,7 @@
             adText: "收藏 + 分享給朋友 💡",
             theme: "#6366f1",
             style: "minimal",
+            scene: "default",
             useDefaultBg: true,
             uploadedBaseImg: null,
             coverImg: null,
@@ -1317,6 +1347,39 @@
             });
         }
 
+        function getAvailableScenes(styleId = state.style) {
+            return sceneMatrix[styleId] || ['default'];
+        }
+
+        function ensureValidScene() {
+            const available = getAvailableScenes();
+            if (!available.includes(state.scene)) {
+                updateState('scene', 'default');
+            }
+        }
+
+        function renderSceneButtons() {
+            const sceneBox = document.getElementById('scene-selector');
+            const sceneHint = document.getElementById('scene-hint');
+            if (!sceneBox) return;
+
+            const available = getAvailableScenes();
+            sceneBox.innerHTML = '';
+
+            available.forEach(sceneId => {
+                const cfg = sceneConfigs.find(s => s.id === sceneId) || sceneConfigs[0];
+                const isActive = state.scene === sceneId;
+                const btn = document.createElement('button');
+                btn.className = `p-2 border rounded-lg text-left transition-all ${isActive ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-200' : 'border-slate-200 hover:bg-slate-50'}`;
+                btn.innerHTML = `<div class="text-[10px] font-bold text-slate-700">${cfg.name}</div><div class="text-[9px] text-slate-400 mt-0.5">${cfg.hint}</div>`;
+                btn.onclick = () => switchScene(sceneId);
+                sceneBox.appendChild(btn);
+            });
+
+            const activeCfg = sceneConfigs.find(s => s.id === state.scene) || sceneConfigs[0];
+            if (sceneHint) sceneHint.textContent = activeCfg.name;
+        }
+
         function init() {
             lucide.createIcons();
 
@@ -1330,6 +1393,8 @@
                 sBox.appendChild(btn);
             });
 
+            ensureValidScene();
+            renderSceneButtons();
             renderThemeButtons();
             switchStickerTab(state.stickerTab || 'princess');
 
@@ -1491,6 +1556,7 @@
 
         function switchStyle(id) {
             updateState('style', id);
+            ensureValidScene();
             styleConfigs.forEach(s => {
                 const b = document.getElementById(`btn-${s.id}`);
                 const isActive = s.id === id;
@@ -1501,6 +1567,13 @@
                     icon.classList.add(isActive ? 'text-indigo-500' : 'text-slate-400');
                 }
             });
+            renderSceneButtons();
+            scheduleRender({ scroll: false });
+        }
+
+        function switchScene(id) {
+            updateState('scene', id);
+            renderSceneButtons();
             scheduleRender({ scroll: false });
         }
 
@@ -1764,8 +1837,10 @@
 
                 const isCover = (i === 0);
                 let html = '';
-                if (isCover) html = renderCover();
-                else {
+                if (isCover) {
+                    const sceneBadge = renderSceneBadge();
+                    html = `${sceneBadge}${renderCover()}`;
+                } else {
                     const pageItems = pages[i - 1] || [];
                     html = renderContent(pageItems);
                 }
@@ -1833,6 +1908,18 @@
         }
 
         // ... Render Templates (Same as v21) ...
+        function renderSceneBadge() {
+            if (state.scene === 'default') return '';
+            const available = getAvailableScenes();
+            if (!available.includes(state.scene)) return '';
+
+            const cfg = sceneConfigs.find(s => s.id === state.scene);
+            if (!cfg) return '';
+
+            const text = cfg.badge || cfg.name;
+            return `<div class="absolute top-4 right-4 z-30 px-3 py-1 rounded-full text-[10px] font-bold tracking-wide bg-white/88 text-slate-700 border border-white shadow-sm backdrop-blur-sm">${text}</div>`;
+        }
+
         function renderCover() {
             const t = state.title.replace(/\n/g, '<br>');
             const a = state.author;
