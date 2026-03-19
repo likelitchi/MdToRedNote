@@ -86,7 +86,7 @@
         }
 
         .card-wrapper.selected .card-container {
-            box-shadow: 0 0 0 4px #f43f5e, 0 20px 40px rgba(244, 63, 94, 0.2);
+            box-shadow: 0 0 0 4px #6366f1, 0 20px 40px rgba(99, 102, 241, 0.22);
         }
 
         .area-header {
@@ -684,7 +684,7 @@
         }
 
         .draggable-ip:hover {
-            border: 2px dashed rgba(244, 63, 94, 0.5);
+            border: 2px dashed rgba(99, 102, 241, 0.5);
         }
 
         /* Cover Image */
@@ -751,7 +751,7 @@
         }
 
         .char-item:hover {
-            border-color: #f43f5e;
+            border-color: #6366f1;
             background-color: #fff1f2;
             transform: translateY(-2px);
         }
@@ -802,9 +802,9 @@
         }
 
         .sticker-tab.active {
-            background-color: #fecdd3;
-            color: #be123c;
-            border-color: #fda4af;
+            background-color: #e0e7ff;
+            color: #3730a3;
+            border-color: #a5b4fc;
         }
     </style>
 </head>
@@ -816,11 +816,11 @@
         <div class="flex items-center gap-4">
             <div class="flex items-center gap-2">
                 <div
-                    class="w-8 h-8 bg-rose-500 rounded-lg flex items-center justify-center text-white shadow-sm shadow-rose-200">
+                    class="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center text-white shadow-sm shadow-indigo-200">
                     <i data-lucide="layers" size="18"></i>
                 </div>
-                <h1 class="text-lg font-bold tracking-tight text-slate-800 hidden md:block">Visual <span
-                        class="text-rose-500">Suite v27</span></h1>
+                <h1 class="text-lg font-bold tracking-tight text-slate-800 hidden md:block">IG 知識卡 <span
+                        class="text-indigo-500">Creator</span></h1>
             </div>
 
             <div class="flex bg-slate-100 p-1 rounded-lg">
@@ -855,7 +855,7 @@
             </button>
 
             <button onclick="handleExport()" id="export-btn"
-                class="bg-rose-500 hover:bg-rose-600 text-white px-4 md:px-6 py-1.5 rounded-full font-bold flex items-center gap-2 transition-all shadow-lg shadow-rose-200 active:scale-95 text-xs md:text-sm ml-2">
+                class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 md:px-6 py-1.5 rounded-full font-bold flex items-center gap-2 transition-all shadow-lg shadow-indigo-200 active:scale-95 text-xs md:text-sm ml-2">
                 <i data-lucide="download" size="14"></i> <span id="dl-text">下載</span>
             </button>
         </div>
@@ -906,8 +906,8 @@
 
                 <div id="sidebar-gen" class="space-y-6 pb-8">
                     <section class="space-y-3">
-                        <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">1. 風格選擇</h3>
-                        <div class="grid grid-cols-4 gap-2" id="style-selector"></div>
+                        <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">1. IG 風格模板（活潑 / 正式）</h3>
+                        <div class="grid grid-cols-3 gap-2" id="style-selector"></div>
                     </section>
                     <section class="space-y-3">
                         <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">2. 素材設定</h3>
@@ -922,10 +922,10 @@
 
                             <label
                                 class="border border-slate-200 rounded-lg p-3 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all bg-white h-20 relative overflow-hidden group">
-                                <i data-lucide="star" class="text-rose-400 mb-1" size="16"></i>
+                                <i data-lucide="star" class="text-indigo-400 mb-1" size="16"></i>
                                 <span class="text-[10px] font-bold text-slate-600">封面主角</span>
                                 <div
-                                    class="absolute inset-0 bg-rose-50 opacity-0 group-hover:opacity-10 transition-opacity">
+                                    class="absolute inset-0 bg-indigo-50 opacity-0 group-hover:opacity-10 transition-opacity">
                                 </div>
                                 <input type="file" class="hidden" accept="image/*"
                                     onchange="handleImgUpload(event, 'cover')">
@@ -933,7 +933,7 @@
                         </div>
                         <div class="flex items-center gap-2 px-1">
                             <input type="checkbox" id="check-default-bg"
-                                class="w-4 h-4 rounded text-rose-600 focus:ring-rose-500">
+                                class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500">
                             <label for="check-default-bg" class="text-xs text-slate-500 font-bold">使用默認背景
                                 (frame.png)</label>
                         </div>
@@ -955,7 +955,7 @@
                             </div>
                             <div class="flex items-center gap-2">
                                 <input type="range" id="icon-scale-slider" min="0.5" max="3.0" step="0.1" value="1.0"
-                                    class="w-full accent-rose-500 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer flex-1"
+                                    class="w-full accent-indigo-500 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer flex-1"
                                     oninput="updateIconScale(this.value)">
                                 <button onclick="toggleIconFlip()"
                                     class="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 text-slate-500 transition-colors"
@@ -968,21 +968,21 @@
                     <section class="space-y-3">
                         <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">3. 內容文案</h3>
                         <input type="text" id="in-title"
-                            class="w-full border border-slate-200 rounded-lg p-3 font-bold focus:ring-2 focus:ring-rose-500 outline-none text-slate-700 text-sm"
+                            class="w-full border border-slate-200 rounded-lg p-3 font-bold focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 text-sm"
                             placeholder="封面標題">
 
                         <div class="flex items-center gap-2">
                             <div class="flex items-center h-full pt-1" title="顯示/隱藏 署名">
                                 <input type="checkbox" id="check-show-author"
-                                    class="w-5 h-5 rounded text-rose-600 focus:ring-rose-500 cursor-pointer border-slate-300">
+                                    class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer border-slate-300">
                             </div>
                             <input type="text" id="in-author"
-                                class="flex-1 border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-rose-500 outline-none text-slate-600"
+                                class="flex-1 border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-slate-600"
                                 placeholder="署名 / IG">
                         </div>
 
                         <textarea id="in-content" rows="6"
-                            class="w-full border border-slate-200 rounded-lg p-3 text-sm leading-relaxed focus:ring-2 focus:ring-rose-500 outline-none resize-none text-slate-600"
+                            class="w-full border border-slate-200 rounded-lg p-3 text-sm leading-relaxed focus:ring-2 focus:ring-indigo-500 outline-none resize-none text-slate-600"
                             placeholder="正文內容 (輸入 '---' 強制分頁)"></textarea>
 
                         <!-- Footer Settings -->
@@ -990,11 +990,11 @@
                             <span class="text-xs font-bold text-slate-500">頁尾模式</span>
                             <div class="flex items-center gap-3">
                                 <label class="flex items-center gap-1"><input type="radio" name="footer-mode"
-                                        value="pagenum" class="text-rose-600"><span class="text-xs">頁碼</span></label>
+                                        value="pagenum" class="text-indigo-600"><span class="text-xs">頁碼</span></label>
                                 <label class="flex items-center gap-1"><input type="radio" name="footer-mode"
-                                        value="text" class="text-rose-600"><span class="text-xs">文字</span></label>
+                                        value="text" class="text-indigo-600"><span class="text-xs">文字</span></label>
                                 <label class="flex items-center gap-1"><input type="radio" name="footer-mode"
-                                        value="none" class="text-rose-600"><span class="text-xs">無</span></label>
+                                        value="none" class="text-indigo-600"><span class="text-xs">無</span></label>
                             </div>
                             <input type="text" id="in-ad"
                                 class="w-full border border-slate-200 rounded p-2 text-xs hidden"
@@ -1011,7 +1011,7 @@
                     <section class="space-y-4">
                         <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">長圖拼接 (Batch Merger)</h3>
                         <div class="flex items-center gap-2 mb-2">
-                            <input type="checkbox" id="check-merger-default-bg" class="w-4 h-4 rounded text-rose-600">
+                            <input type="checkbox" id="check-merger-default-bg" class="w-4 h-4 rounded text-indigo-600">
                             <label for="check-merger-default-bg" class="text-xs font-bold text-slate-600">使用默認背景</label>
                         </div>
                         <label
@@ -1048,11 +1048,11 @@
                             <span class="text-xs font-bold text-slate-500">頁尾模式</span>
                             <div class="flex items-center gap-3">
                                 <label class="flex items-center gap-1"><input type="radio" name="merge-footer-mode"
-                                        value="pagenum" class="text-rose-600"><span class="text-xs">頁碼</span></label>
+                                        value="pagenum" class="text-indigo-600"><span class="text-xs">頁碼</span></label>
                                 <label class="flex items-center gap-1"><input type="radio" name="merge-footer-mode"
-                                        value="text" class="text-rose-600"><span class="text-xs">文字</span></label>
+                                        value="text" class="text-indigo-600"><span class="text-xs">文字</span></label>
                                 <label class="flex items-center gap-1"><input type="radio" name="merge-footer-mode"
-                                        value="none" class="text-rose-600"><span class="text-xs">無</span></label>
+                                        value="none" class="text-indigo-600"><span class="text-xs">無</span></label>
                             </div>
                             <input type="text" id="merge-in-ad"
                                 class="w-full border border-slate-200 rounded p-2 text-xs hidden"
@@ -1066,7 +1066,7 @@
     </main>
 
     <div id="export-overlay">
-        <div class="animate-spin text-rose-400 mb-6"><i data-lucide="refresh-cw" size="64"></i></div>
+        <div class="animate-spin text-indigo-400 mb-6"><i data-lucide="refresh-cw" size="64"></i></div>
         <h2 class="text-2xl font-black mb-2 tracking-tighter uppercase text-center">處理中...</h2>
         <p class="text-slate-400 font-mono" id="progress-val">Initializing...</p>
     </div>
@@ -1109,43 +1109,33 @@
         };
 
         const styleConfigs = [
-            { id: 'minimal', name: '極簡', icon: 'monitor' },
-            { id: 'poster', name: '焦點', icon: 'megaphone' },
-            { id: 'memo', name: '筆記', icon: 'file-text' },
-            { id: 'journal', name: '手賬', icon: 'scissors' },
-            { id: 'glass', name: '玻璃', icon: 'droplet' },
-            { id: 'cyber', name: '光感', icon: 'sun' },
-            { id: 'luxury', name: '雜誌', icon: 'book' },
-            { id: 'pop', name: '撞色', icon: 'zap' },
-            { id: 'dry', name: '卡片', icon: 'credit-card' },
-            { id: 'paper', name: '紙質', icon: 'newspaper' },
-            { id: 'neon', name: '霓虹', icon: 'zap-off' },
-            { id: 'blob', name: '流體', icon: 'cloud' },
-            { id: 'cutout', name: '鏤空', icon: 'scissors' },
-            { id: 'checklist', name: '清單', icon: 'check-square' },
-            { id: 'brutal', name: '線框', icon: 'box' },
-            { id: 'retro', name: '膠片', icon: 'camera' },
-            { id: 'dark', name: '夜間', icon: 'moon' },
-            { id: 'comic', name: '塗鴉', icon: 'smile' },
-            { id: 'elegant', name: '純淨', icon: 'feather' },
-            { id: 'playful', name: '柔和', icon: 'heart' },
-            { id: 'tech', name: '現代', icon: 'cpu' },
-            { id: 'ink', name: '禪意', icon: 'pen-tool' },
-            { id: 'boxy', name: '方塊', icon: 'grid' },
-            { id: 'frame', name: '外框', icon: 'square' }
+            // 活潑可愛・年輕有活力
+            { id: 'playful', name: '可愛軟糖', icon: 'heart' },
+            { id: 'memo', name: '課堂筆記', icon: 'file-text' },
+            { id: 'journal', name: '手帳女孩', icon: 'scissors' },
+            { id: 'checklist', name: '打勾清單', icon: 'check-square' },
+            { id: 'comic', name: '漫畫活力', icon: 'smile' },
+            { id: 'elegant', name: '清新柔光', icon: 'sparkles' },
+            // 正經正式・專業知識分享
+            { id: 'minimal', name: '極簡專欄', icon: 'monitor' },
+            { id: 'tech', name: '科技簡報', icon: 'cpu' },
+            { id: 'ink', name: '學術墨感', icon: 'pen-tool' },
+            { id: 'frame', name: '商務框架', icon: 'square' },
+            { id: 'paper', name: '雜誌排版', icon: 'newspaper' },
+            { id: 'dry', name: '理性卡片', icon: 'credit-card' }
         ];
 
-        const themes = ["#f43f5e", "#3b82f6", "#10b981", "#f59e0b", "#000000"];
+        const themes = ["#6366f1", "#8b5cf6", "#14b8a6", "#2563eb", "#0f172a", "#f59e0b", "#ec4899"];
 
         // --- Core State ---
         let state = {
             mode: 'gen',
-            title: "2024年必須掌握的\n前端視覺開發技巧",
-            author: "@VisualCloneLab",
-            content: `## 1. 掌握色彩心理學\n色彩不僅是裝飾。\n\n---\n\n## 2. 留白的藝術\n> 留白不是空，而是設計的呼吸。\n\n不要填滿每一個角落。`,
+            title: "IG 知識分享模板\n3 步驟做出高收藏貼文",
+            author: "@YourBrand",
+            content: `## 1. 一頁只講一個重點\n讀者 3 秒要看懂你在講什麼。\n\n---\n\n## 2. 標題先寫結論\n先給結果，再補方法和例子。\n\n---\n\n## 3. 用一致的語氣與配色\n固定模板，品牌感會更快建立。`,
             footerMode: 'pagenum',
-            adText: "點讚 + 收藏 ✨",
-            theme: "#f43f5e",
+            adText: "收藏 + 分享給朋友 💡",
+            theme: "#6366f1",
             style: "minimal",
             useDefaultBg: true,
             uploadedBaseImg: null,
@@ -1224,8 +1214,8 @@
             styleConfigs.forEach(s => {
                 const btn = document.createElement('button');
                 btn.id = `btn-${s.id}`;
-                btn.className = `p-2 border rounded-lg flex flex-col items-center gap-1 transition-all ${state.style === s.id ? 'border-rose-500 bg-rose-50 ring-1 ring-rose-200' : 'border-slate-200 hover:bg-slate-50'}`;
-                btn.innerHTML = `<i data-lucide="${s.icon}" size="14" class="${state.style === s.id ? 'text-rose-500' : 'text-slate-400'}"></i><span class="text-[10px] font-bold whitespace-nowrap text-slate-600">${s.name}</span>`;
+                btn.className = `p-2 border rounded-lg flex flex-col items-center gap-1 transition-all ${state.style === s.id ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-200' : 'border-slate-200 hover:bg-slate-50'}`;
+                btn.innerHTML = `<i data-lucide="${s.icon}" size="14" class="${state.style === s.id ? 'text-indigo-500' : 'text-slate-400'}"></i><span class="text-[10px] font-bold whitespace-nowrap text-slate-600">${s.name}</span>`;
                 btn.onclick = () => switchStyle(s.id);
                 sBox.appendChild(btn);
             });
@@ -1311,12 +1301,12 @@
         function switchStickerTab(tab) {
             updateState('stickerTab', tab);
             document.querySelectorAll('.sticker-tab').forEach(btn => {
-                btn.classList.remove('active', 'bg-rose-100', 'text-rose-600', 'border-rose-200');
+                btn.classList.remove('active', 'bg-indigo-100', 'text-indigo-600', 'border-indigo-200');
                 btn.classList.add('text-slate-500', 'border-transparent');
             });
             const activeBtn = document.getElementById(`tab-${tab}`);
             if (activeBtn) {
-                activeBtn.classList.add('active', 'bg-rose-100', 'text-rose-600', 'border-rose-200');
+                activeBtn.classList.add('active', 'bg-indigo-100', 'text-indigo-600', 'border-indigo-200');
                 activeBtn.classList.remove('text-slate-500', 'border-transparent');
             }
             const cGrid = document.getElementById('default-chars');
@@ -1394,11 +1384,11 @@
             styleConfigs.forEach(s => {
                 const b = document.getElementById(`btn-${s.id}`);
                 const isActive = s.id === id;
-                b.className = `p-2 border rounded-lg flex flex-col items-center gap-1 transition-all ${isActive ? 'border-rose-500 bg-rose-50 ring-1 ring-rose-200' : 'border-slate-200 hover:bg-slate-50'}`;
+                b.className = `p-2 border rounded-lg flex flex-col items-center gap-1 transition-all ${isActive ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-200' : 'border-slate-200 hover:bg-slate-50'}`;
                 const icon = b.querySelector('i') || b.querySelector('svg');
                 if (icon) {
-                    icon.classList.remove('text-rose-500', 'text-slate-400');
-                    icon.classList.add(isActive ? 'text-rose-500' : 'text-slate-400');
+                    icon.classList.remove('text-indigo-500', 'text-slate-400');
+                    icon.classList.add(isActive ? 'text-indigo-500' : 'text-slate-400');
                 }
             });
             scheduleRender({ scroll: false });
@@ -1767,7 +1757,7 @@
                 case 'cyber': content = `<div class="h-full flex flex-col justify-center p-12"><div class="aura-box"><h1 class="text-[90px] font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500 leading-tight mb-6">${t}</h1>${renderAuth(`<p class="text-3xl text-slate-500 font-bold">${a}</p>`)}</div></div>`; break;
                 case 'luxury': content = `<div class="h-full flex flex-col justify-center items-center text-center p-16"><div class="mag-line"></div><h1 class="text-[90px] leading-tight mb-6 font-serif italic text-slate-800">${t}</h1>${renderAuth(`<div class="mag-line"></div><p class="text-2xl tracking-[4px] uppercase text-slate-500">${a}</p>`)}</div>`; break;
                 case 'pop': content = `<div class="h-full flex flex-col justify-center items-center"><div class="pop-card transform rotate-2"><h1 class="text-[80px] leading-none font-black text-slate-900">${t}</h1></div>${renderAuth(`<div class="mt-10 bg-black text-white px-8 py-3 rounded-full text-3xl font-bold transform -rotate-2">${a}</div>`)}</div>`; break;
-                case 'dry': content = `<div class="h-full flex flex-col justify-center p-12"><div class="floating-card"><h1 class="text-[85px] font-black leading-tight text-slate-800 mb-8">${t}</h1>${renderAuth(`<div class="flex items-center gap-4"><div class="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center text-2xl">👀</div><span class="text-2xl font-bold text-slate-500">${a}</span></div>`)}</div></div>`; break;
+                case 'dry': content = `<div class="h-full flex flex-col justify-center p-12"><div class="floating-card"><h1 class="text-[85px] font-black leading-tight text-slate-800 mb-8">${t}</h1>${renderAuth(`<div class="flex items-center gap-4"><div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-2xl">👀</div><span class="text-2xl font-bold text-slate-500">${a}</span></div>`)}</div></div>`; break;
                 case 'paper': content = `<div class="h-full flex flex-col justify-center p-16"><div class="paper-sheet"><h1 class="text-[80px] font-bold mb-8 border-b-2 border-[#d6cfc7] pb-8 leading-tight">${t}</h1>${renderAuth(`<p class="text-3xl text-right italic font-serif text-[#78716c]">- ${a}</p>`)}</div></div>`; break;
                 case 'solid': content = `<div class="h-full flex flex-col justify-center p-16"><div class="solid-content"><h1 class="text-[100px] font-black leading-tight mb-8 drop-shadow-sm">${t}</h1>${renderAuth(`<p class="text-3xl font-medium opacity-90">${a}</p>`)}</div></div>`; break;
                 case 'brutal': content = `<div class="h-full flex flex-col justify-center p-10"><div class="outline-box"><h1 class="text-[90px] font-black leading-none mb-6 text-slate-900">${t}</h1>${renderAuth(`<div class="bg-black text-white px-6 py-2 inline-block text-2xl font-bold rounded-full">${a}</div>`)}</div></div>`; break;
@@ -1882,6 +1872,33 @@
             dragTarget = null;
         }
 
+        function syncFormValuesForExport(sourceRoot, clonedRoot) {
+            const sourceFields = sourceRoot.querySelectorAll('textarea, input, select');
+            const clonedFields = clonedRoot.querySelectorAll('textarea, input, select');
+
+            sourceFields.forEach((sourceField, index) => {
+                const clonedField = clonedFields[index];
+                if (!clonedField) return;
+
+                // textarea / input 的即時 value 不是 cloneNode(true) 一定會帶到，手動同步避免「只有圖片沒有文字」
+                if (sourceField.tagName === 'TEXTAREA' || sourceField.tagName === 'INPUT') {
+                    clonedField.value = sourceField.value;
+                    clonedField.setAttribute('value', sourceField.value || '');
+
+                    if (sourceField.type === 'checkbox' || sourceField.type === 'radio') {
+                        clonedField.checked = sourceField.checked;
+                    }
+                }
+
+                if (sourceField.tagName === 'SELECT') {
+                    clonedField.value = sourceField.value;
+                    Array.from(clonedField.options || []).forEach(opt => {
+                        opt.selected = (opt.value === sourceField.value);
+                    });
+                }
+            });
+        }
+
         function handleExport() { state.mode === 'gen' ? downloadZip() : downloadMerger(); }
 
         async function downloadMerger() {
@@ -1889,10 +1906,41 @@
             const progress = document.getElementById('progress-val');
             const cardEl = document.getElementById('merger-card');
             const overlayEl = document.getElementById('merge-overlay-el');
+
+            const renderMergerCanvas = async () => {
+                const el = cardEl.cloneNode(true);
+                Object.assign(el.style, {
+                    transform: 'none',
+                    position: 'fixed',
+                    top: '0',
+                    left: '-9999px',
+                    width: APP_CONFIG.width + 'px',
+                    height: APP_CONFIG.height + 'px',
+                    display: 'flex',
+                    zIndex: '9999'
+                });
+                document.body.appendChild(el);
+                void el.offsetHeight;
+                await new Promise(r => setTimeout(r, 30));
+                try {
+                    return await html2canvas(el, {
+                        scale: 1,
+                        width: APP_CONFIG.width,
+                        height: APP_CONFIG.height,
+                        useCORS: true,
+                        backgroundColor: '#ffffff',
+                        allowTaint: true,
+                        logging: false
+                    });
+                } finally {
+                    document.body.removeChild(el);
+                }
+            };
+
             overlay.style.display = 'flex';
             try {
                 if (state.mergeOverlays.length <= 1) {
-                    const c = await html2canvas(cardEl, { scale: 1, width: APP_CONFIG.width, height: APP_CONFIG.height, useCORS: true, backgroundColor: '#ffffff' });
+                    const c = await renderMergerCanvas();
                     const a = document.createElement('a'); a.download = `Merger_${Date.now()}.png`; a.href = c.toDataURL(); a.click();
                 } else {
                     const zip = new JSZip();
@@ -1903,7 +1951,7 @@
                         overlayEl.src = state.mergeOverlays[i];
                         await new Promise(resolve => { if (overlayEl.complete) resolve(); else overlayEl.onload = resolve; });
                         await new Promise(r => setTimeout(r, 50));
-                        const canvas = await html2canvas(cardEl, { scale: 1, width: APP_CONFIG.width, height: APP_CONFIG.height, useCORS: true, backgroundColor: '#ffffff' });
+                        const canvas = await renderMergerCanvas();
                         const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
                         zip.file(`Merger_${i + 1}.png`, blob);
                     }
@@ -1922,6 +1970,11 @@
             overlay.style.display = 'flex';
             await new Promise(r => setTimeout(r, 100));
 
+            // 等待字型準備完成，避免 html2canvas 偶發抓不到文字
+            if (document.fonts && document.fonts.ready) {
+                try { await document.fonts.ready; } catch (_) { }
+            }
+
             const zip = new JSZip();
             const cards = document.querySelectorAll('.card-wrapper');
 
@@ -1931,6 +1984,9 @@
 
                 const originalContainer = cards[i].querySelector('.card-container');
                 const el = originalContainer.cloneNode(true);
+
+                // 同步表單欄位的即時值（textarea/input/select），避免導出時文字遺失
+                syncFormValuesForExport(originalContainer, el);
 
                 // --- 修復 1：解決背景變灰色的問題 ---
                 // 強制將預覽區的灰色 (#f0f0f0) 覆寫為純白 (#ffffff)
@@ -1976,6 +2032,9 @@
                 });
 
                 document.body.appendChild(el);
+                // 強制排版並稍等一個 tick，讓瀏覽器完成文字繪製
+                void el.offsetHeight;
+                await new Promise(r => setTimeout(r, 30));
 
                 try {
                     const canvas = await html2canvas(el, {
