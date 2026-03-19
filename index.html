@@ -1916,10 +1916,41 @@
             const progress = document.getElementById('progress-val');
             const cardEl = document.getElementById('merger-card');
             const overlayEl = document.getElementById('merge-overlay-el');
+
+            const renderMergerCanvas = async () => {
+                const el = cardEl.cloneNode(true);
+                Object.assign(el.style, {
+                    transform: 'none',
+                    position: 'fixed',
+                    top: '0',
+                    left: '-9999px',
+                    width: APP_CONFIG.width + 'px',
+                    height: APP_CONFIG.height + 'px',
+                    display: 'flex',
+                    zIndex: '9999'
+                });
+                document.body.appendChild(el);
+                void el.offsetHeight;
+                await new Promise(r => setTimeout(r, 30));
+                try {
+                    return await html2canvas(el, {
+                        scale: 1,
+                        width: APP_CONFIG.width,
+                        height: APP_CONFIG.height,
+                        useCORS: true,
+                        backgroundColor: '#ffffff',
+                        allowTaint: true,
+                        logging: false
+                    });
+                } finally {
+                    document.body.removeChild(el);
+                }
+            };
+
             overlay.style.display = 'flex';
             try {
                 if (state.mergeOverlays.length <= 1) {
-                    const c = await html2canvas(cardEl, { scale: 1, width: APP_CONFIG.width, height: APP_CONFIG.height, useCORS: true, backgroundColor: '#ffffff' });
+                    const c = await renderMergerCanvas();
                     const a = document.createElement('a'); a.download = `Merger_${Date.now()}.png`; a.href = c.toDataURL(); a.click();
                 } else {
                     const zip = new JSZip();
@@ -1930,7 +1961,7 @@
                         overlayEl.src = state.mergeOverlays[i];
                         await new Promise(resolve => { if (overlayEl.complete) resolve(); else overlayEl.onload = resolve; });
                         await new Promise(r => setTimeout(r, 50));
-                        const canvas = await html2canvas(cardEl, { scale: 1, width: APP_CONFIG.width, height: APP_CONFIG.height, useCORS: true, backgroundColor: '#ffffff' });
+                        const canvas = await renderMergerCanvas();
                         const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
                         zip.file(`Merger_${i + 1}.png`, blob);
                     }
