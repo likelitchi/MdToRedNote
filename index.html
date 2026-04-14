@@ -1754,6 +1754,103 @@
             return 'none';
         }
 
+        function stripHtmlTags(html = '') {
+            return html
+                .replace(/<br\s*\/?/gi, ' ')
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/&nbsp;/g, ' ')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function escapeAttr(text = '') {
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function parseTaskMeta(raw = '') {
+            const cleaned = raw.trim();
+            const parts = cleaned.split('|').map(part => part.trim()).filter(Boolean);
+            const title = parts[0] || cleaned;
+            let date = '';
+            let location = '';
+            if (parts.length >= 3) {
+                date = parts[1] || '';
+                location = parts.slice(2).join(' | ');
+            } else if (parts.length === 2) {
+                if (/^(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}([-.\/]\d{2,4})?)$/.test(parts[1])) {
+                    date = parts[1];
+                } else {
+                    location = parts[1];
+                }
+            }
+            return { title, date, location };
+        }
+
+        function buildTaskSummaryPages(rawText, pages) {
+            const lines = (rawText || '').split(/\r?\n/);
+            const pageTexts = pages.map(pageItems => stripHtmlTags((pageItems || []).join(' ')));
+            const pending = [];
+            const completed = [];
+
+            lines.forEach((line) => {
+                const match = line.match(/^\s*[-*]\s+\[( |x|X)\]\s+(.+)$/);
+                if (!match) return;
+
+                const done = match[1].toLowerCase() === 'x';
+                const meta = parseTaskMeta(match[2]);
+                const targetPageIdx = pageTexts.findIndex(pageText => pageText.includes(meta.title));
+                const targetCardNumber = targetPageIdx >= 0 ? targetPageIdx + 2 : null;
+                const linkStart = targetCardNumber ? `<a href="#card-${targetCardNumber}" class="text-inherit no-underline">` : '';
+                const linkEnd = targetCardNumber ? '</a>' : '';
+
+                if (done) {
+                    const metaParts = [meta.date, meta.location].filter(Boolean);
+                    completed.push(`
+                        <li class="mb-3 leading-relaxed">
+                            ${linkStart}<strong>${meta.title}</strong>${linkEnd}
+                            ${metaParts.length ? `<div class="text-xs text-slate-500 mt-1">${metaParts.join(' · ')}</div>` : ''}
+                        </li>
+                    `);
+                } else {
+                    pending.push(`
+                        <li class="mb-3 leading-relaxed">
+                            ${linkStart}${meta.title}${linkEnd}
+                        </li>
+                    `);
+                }
+            });
+
+            const summaryPages = [];
+            if (pending.length) {
+                summaryPages.push(`
+                    <div class="space-y-4">
+                        <h2>任务清单</h2>
+                        <p class="text-sm text-slate-500">我们想做的事</p>
+                        <ul>${pending.join('')}</ul>
+                    </div>
+                `);
+            }
+
+            if (completed.length) {
+                summaryPages.push(`
+                    <div class="space-y-4">
+                        <h2>任务完成清单</h2>
+                        <p class="text-sm text-slate-500">已完成事项（可点击跳到对应照片页）</p>
+                        <ul>${completed.join('')}</ul>
+                    </div>
+                `);
+            }
+
+            return summaryPages;
+        }
+
         function renderGen(options = { scroll: false }) {
             const wrapper = document.getElementById('canvas-wrapper');
             const previewSection = document.getElementById('preview-section');
@@ -1762,7 +1859,8 @@
             const currentScroll = previewSection.scrollTop;
 
             const pages = calculatePages(state.content);
-            const totalCards = pages.length + 1;
+            const summaryPages = buildTaskSummaryPages(state.content, pages);
+            const totalCards = pages.length + summaryPages.length + 1;
 
             if (state.selectedCardIndex >= totalCards) state.selectedCardIndex = 0;
 
@@ -1799,6 +1897,8 @@
 
                 cw.className = `card-wrapper ${state.selectedCardIndex === i ? 'selected' : ''}`;
                 cw.onclick = () => selectCard(i);
+                cw.id = `card-${i + 1}`;
+                cw.dataset.cardIndex = String(i);
 
                 container.className = `card-container style-${state.style}`;
                 container.style.setProperty('--theme', state.theme);
@@ -1817,8 +1917,10 @@
                 if (isCover) {
                     const sceneBadge = renderSceneBadge();
                     html = `${sceneBadge}${renderCover()}`;
+                } else if (i <= summaryPages.length) {
+                    html = `<div class="generated-html">${summaryPages[i - 1]}</div>`;
                 } else {
-                    const pageItems = pages[i - 1] || [];
+                    const pageItems = pages[i - summaryPages.length - 1] || [];
                     html = renderContent(pageItems);
                 }
 
