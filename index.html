@@ -2304,6 +2304,14 @@
                     zIndex: '9999'
                 });
 
+                // 匯出時不要沿用預覽區的灰底，強制卡片容器改為純白
+                if (state.useDefaultBg && !state.uploadedBaseImg && state.style !== 'solid' && state.style !== 'cutout') {
+                    el.style.backgroundColor = '#ffffff';
+                    el.querySelectorAll('.card-container').forEach(card => {
+                        card.style.backgroundColor = '#ffffff';
+                    });
+                }
+
                 // 確保 CSS 變數正確傳入截圖節點
                 el.style.setProperty('--theme', state.theme);
 
