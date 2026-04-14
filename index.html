@@ -2280,8 +2280,8 @@
 
                 // --- 修復 1：解決背景變灰色的問題 ---
                 // 強制將預覽區的灰色 (#f0f0f0) 覆寫為純白 (#ffffff)
-                let exportBgColor = "#ffffff"; 
-                let exportBgImage = state.uploadedBaseImg ? `url(${state.uploadedBaseImg})` : (state.useDefaultBg ? `url('${APP_CONFIG.bgUrl}')` : 'none');
+                let exportBgColor = "#ffffff";
+                let exportBgImage = state.uploadedBaseImg ? `url(${state.uploadedBaseImg})` : 'none';
 
                 // 如果是「純色 (solid)」或「鏤空 (cutout)」風格，底色應保留為主題色
                 if (state.style === 'solid' || state.style === 'cutout') {
