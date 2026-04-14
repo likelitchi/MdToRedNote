@@ -2188,16 +2188,18 @@
 
                 Object.assign(el.style, {
                     transform: 'none',
-                    position: 'fixed',
+                    position: 'absolute',
                     top: '0',
-                    left: '-9999px',
+                    left: '0',
                     width: APP_CONFIG.width + 'px',
                     height: APP_CONFIG.height + 'px',
                     backgroundColor: exportBgColor,
                     backgroundImage: exportBgImage,
                     backgroundSize: state.uploadedBaseImg ? 'cover' : 'repeat',
                     display: 'flex',
-                    zIndex: '9999'
+                    opacity: '0',
+                    pointerEvents: 'none',
+                    zIndex: '-1'
                 });
 
                 // 確保 CSS 變數正確傳入截圖節點
