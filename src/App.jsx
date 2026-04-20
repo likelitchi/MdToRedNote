@@ -174,12 +174,40 @@ function getCoverTitleSizeClass(title) {
     .map((line) => line.trim())
     .filter(Boolean);
   const longestLine = lines.reduce((max, line) => Math.max(max, line.length), 0);
-  const score = Math.max(plain.length, longestLine * 1.5);
+  const score = Math.max(plain.length, longestLine * 1.7 + Math.max(lines.length - 1, 0) * 3);
 
+  if (score >= 44) return "title-size-xxs";
   if (score >= 34) return "title-size-xs";
   if (score >= 26) return "title-size-sm";
-  if (score >= 20) return "title-size-md";
+  if (score >= 18) return "title-size-md";
   return "title-size-lg";
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getCoverTitleStyle(title) {
+  const lines = splitTitleLines(title);
+  const safeLines = lines.length ? lines : [""];
+  const plain = safeLines.join("").replace(/\s+/g, "");
+  const longestLine = safeLines.reduce((max, line) => Math.max(max, line.length), 0);
+  const lineCount = safeLines.length;
+  const density = longestLine * 1.9 + plain.length * 0.45 + Math.max(lineCount - 1, 0) * 6;
+
+  const fontSize = clamp(112 - (density - 12) * 1.15, 50, 104);
+  const gap = clamp(18 - lineCount * 2 - Math.max(0, longestLine - 10) * 0.22, 8, 14);
+  const lineHeight = clamp(
+    0.94 + Math.max(lineCount - 1, 0) * 0.035 + Math.max(0, 78 - fontSize) * 0.0024,
+    0.94,
+    1.16
+  );
+
+  return {
+    "--cover-title-font-size": `${fontSize}px`,
+    "--cover-title-gap": `${gap}px`,
+    "--cover-title-line-height": lineHeight
+  };
 }
 
 function clampChannel(value) {
@@ -235,6 +263,7 @@ function CoverCard({ project, stylePreset }) {
   const titleLines = splitTitleLines(project.title);
   const variant = stylePreset.variant;
   const titleSizeClass = getCoverTitleSizeClass(project.title);
+  const titleStyle = getCoverTitleStyle(project.title);
 
   return (
     <div className={`cover-layout cover-${variant} ${project.coverImg ? "has-cover-image" : "no-cover-image"}`}>
@@ -254,7 +283,7 @@ function CoverCard({ project, stylePreset }) {
         )}
       </div>
       <div className="cover-copy cover-copy-title-only">
-        <h1 className={`cover-title ${titleSizeClass}`}>
+        <h1 className={`cover-title ${titleSizeClass}`} style={titleStyle}>
           {titleLines.map((line, index) => (
             <span key={`${line}-${index}`}>{line}</span>
           ))}

@@ -937,9 +937,9 @@ img {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  font-size: 104px;
-  line-height: 0.95;
+  gap: var(--cover-title-gap, 12px);
+  font-size: var(--cover-title-font-size, 104px);
+  line-height: var(--cover-title-line-height, 0.95);
   font-weight: 900;
   letter-spacing: -0.04em;
   writing-mode: horizontal-tb;
@@ -978,22 +978,28 @@ img {
 }
 
 .cover-title.title-size-lg {
-  font-size: 104px;
+  --cover-title-font-size: 104px;
+  --cover-title-line-height: 0.95;
 }
 
 .cover-title.title-size-md {
-  font-size: 90px;
-  line-height: 1.02;
+  --cover-title-font-size: 90px;
+  --cover-title-line-height: 1.02;
 }
 
 .cover-title.title-size-sm {
-  font-size: 78px;
-  line-height: 1.05;
+  --cover-title-font-size: 78px;
+  --cover-title-line-height: 1.05;
 }
 
 .cover-title.title-size-xs {
-  font-size: 64px;
-  line-height: 1.08;
+  --cover-title-font-size: 64px;
+  --cover-title-line-height: 1.08;
+}
+
+.cover-title.title-size-xxs {
+  --cover-title-font-size: 56px;
+  --cover-title-line-height: 1.11;
 }
 
 .cover-visual {
@@ -1348,39 +1354,47 @@ img {
 .cover-comic .cover-title.title-size-sm,
 .cover-journal .cover-title.title-size-sm,
 .cover-elegant .cover-title.title-size-sm {
-  font-size: 74px;
+  --cover-title-font-size: 74px;
 }
 
 .cover-magazine .cover-title.title-size-lg {
-  font-size: 106px;
+  --cover-title-font-size: 106px;
 }
 
 .cover-magazine .cover-title.title-size-md {
-  font-size: 88px;
+  --cover-title-font-size: 88px;
 }
 
 .cover-magazine .cover-title.title-size-sm {
-  font-size: 72px;
+  --cover-title-font-size: 72px;
 }
 
 .cover-magazine .cover-title.title-size-xs {
-  font-size: 60px;
+  --cover-title-font-size: 60px;
+}
+
+.cover-magazine .cover-title.title-size-xxs {
+  --cover-title-font-size: 54px;
 }
 
 .cover-poster .cover-title.title-size-lg {
-  font-size: 100px;
+  --cover-title-font-size: 100px;
 }
 
 .cover-poster .cover-title.title-size-md {
-  font-size: 84px;
+  --cover-title-font-size: 84px;
 }
 
 .cover-poster .cover-title.title-size-sm {
-  font-size: 68px;
+  --cover-title-font-size: 68px;
 }
 
 .cover-poster .cover-title.title-size-xs {
-  font-size: 56px;
+  --cover-title-font-size: 56px;
+}
+
+.cover-poster .cover-title.title-size-xxs {
+  --cover-title-font-size: 50px;
 }
 
 .cover-journal .cover-copy,
