@@ -12,6 +12,229 @@ marked.setOptions({
   gfm: true
 });
 
+const FRONTMATTER_PATTERN = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
+const COLUMN_BLOCK_PATTERN = /^:::(left|center|right)[ \t]*\n([\s\S]+?)\n:::(?:\n+|$)/;
+const IMAGE_SIZE_PATTERN = /^(.*?)(?:\|(\d*)(?:x(\d*))?)?$/;
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function parseFrontmatterValue(rawValue) {
+  const value = String(rawValue || "").trim();
+  if (!value) {
+    return "";
+  }
+
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1);
+  }
+
+  if (value.startsWith("[") && value.endsWith("]")) {
+    return value
+      .slice(1, -1)
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return value;
+}
+
+export function extractMd2CardFrontmatter(rawText = "") {
+  const source = String(rawText || "");
+  const match = source.match(FRONTMATTER_PATTERN);
+
+  if (!match) {
+    return {
+      metadata: {},
+      body: source
+    };
+  }
+
+  const metadata = {};
+  const frontmatter = match[1] || "";
+
+  frontmatter.split(/\r?\n/).forEach((line) => {
+    const entry = line.match(/^([A-Za-z0-9_-]+)\s*:\s*(.+?)\s*$/);
+    if (!entry) {
+      return;
+    }
+
+    const [, key, value] = entry;
+    metadata[key] = parseFrontmatterValue(value);
+  });
+
+  return {
+    metadata,
+    body: source.slice(match[0].length)
+  };
+}
+
+function groupAdjacentColumnBlocks(html) {
+  if (typeof document === "undefined") {
+    return html;
+  }
+
+  const root = document.createElement("div");
+  root.innerHTML = html;
+
+  let node = root.firstElementChild;
+
+  while (node) {
+    if (!node.classList.contains("md2-column-block")) {
+      node = node.nextElementSibling;
+      continue;
+    }
+
+    const siblings = [node];
+    let cursor = node.nextElementSibling;
+
+    while (cursor?.classList.contains("md2-column-block")) {
+      siblings.push(cursor);
+      cursor = cursor.nextElementSibling;
+    }
+
+    if (siblings.length < 2) {
+      node = cursor;
+      continue;
+    }
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "md2-columns";
+    wrapper.dataset.columns = String(siblings.length);
+    root.insertBefore(wrapper, siblings[0]);
+    siblings.forEach((item) => wrapper.appendChild(item));
+    node = cursor;
+  }
+
+  return root.innerHTML;
+}
+
+marked.use({
+  hooks: {
+    preprocess(markdown) {
+      return extractMd2CardFrontmatter(markdown).body;
+    },
+    postprocess(html) {
+      return groupAdjacentColumnBlocks(html);
+    }
+  },
+  extensions: [
+    {
+      name: "md2Highlight",
+      level: "inline",
+      start(src) {
+        return src.indexOf("==");
+      },
+      tokenizer(src) {
+        const match = /^==(?=\S)([\s\S]*?\S)==/.exec(src);
+        if (!match) {
+          return undefined;
+        }
+
+        return {
+          type: "md2Highlight",
+          raw: match[0],
+          text: match[1],
+          tokens: this.lexer.inlineTokens(match[1])
+        };
+      },
+      renderer(token) {
+        return `<mark class="md2-highlight">${this.parser.parseInline(token.tokens)}</mark>`;
+      }
+    },
+    {
+      name: "md2Underline",
+      level: "inline",
+      start(src) {
+        return src.indexOf("^");
+      },
+      tokenizer(src) {
+        const match = /^\^(?=\S)([\s\S]*?\S)\^/.exec(src);
+        if (!match) {
+          return undefined;
+        }
+
+        return {
+          type: "md2Underline",
+          raw: match[0],
+          text: match[1],
+          tokens: this.lexer.inlineTokens(match[1])
+        };
+      },
+      renderer(token) {
+        return `<span class="md2-underline">${this.parser.parseInline(token.tokens)}</span>`;
+      }
+    },
+    {
+      name: "md2ColumnBlock",
+      level: "block",
+      start(src) {
+        return src.match(/:::?(left|center|right)/)?.index;
+      },
+      tokenizer(src) {
+        const match = COLUMN_BLOCK_PATTERN.exec(src);
+        if (!match) {
+          return undefined;
+        }
+
+        const [, align, body] = match;
+        return {
+          type: "md2ColumnBlock",
+          raw: match[0],
+          align,
+          text: body,
+          tokens: this.lexer.blockTokens(body, [])
+        };
+      },
+      renderer(token) {
+        return `<section class="md2-column-block md2-column-${token.align}">${this.parser.parse(
+          token.tokens,
+        )}</section>`;
+      },
+      childTokens: ["tokens"]
+    }
+  ],
+  renderer: {
+    image({ href, title, text, tokens }) {
+      const altText = tokens?.length ? this.parser.parseInline(tokens, this.parser.textRenderer) : text;
+      const match = String(altText || "").match(IMAGE_SIZE_PATTERN);
+      const cleanAlt = match?.[1]?.trim() || "";
+      const width = Number.parseInt(match?.[2] || "", 10);
+      const height = Number.parseInt(match?.[3] || "", 10);
+      const styles = [];
+
+      if (Number.isFinite(width) && width > 0) {
+        styles.push(`--md2-image-width:${width}px`);
+      }
+      if (Number.isFinite(height) && height > 0) {
+        styles.push(`--md2-image-height:${height}px`);
+      }
+      if (Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0) {
+        styles.push(`--md2-image-ratio:${width}/${height}`);
+      }
+
+      let html = `<img class="md2-image" src="${escapeHtml(href)}" alt="${escapeHtml(cleanAlt)}"`;
+      if (title) {
+        html += ` title="${escapeHtml(title)}"`;
+      }
+      if (styles.length) {
+        html += ` style="${styles.join(";")}"`;
+      }
+      html += ">";
+      return html;
+    }
+  }
+});
+
 function normalizeStickerCollections(value) {
   if (!value || typeof value !== "object") {
     return {};
@@ -152,8 +375,9 @@ export function paginateMarkdown(rawText, measureRoot) {
     return [];
   }
 
-  const input = String(rawText || "").trim();
-  if (!input) {
+  const parsed = extractMd2CardFrontmatter(rawText);
+  const input = String(parsed.body || "").trim();
+  if (!String(rawText || "").trim() || !input) {
     return [marked.parse("開始輸入內容，這裡會自動切頁。")];
   }
 

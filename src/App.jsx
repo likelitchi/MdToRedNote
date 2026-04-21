@@ -37,6 +37,7 @@ import {
   canvasToBlob,
   downloadBlob,
   downloadJson,
+  extractMd2CardFrontmatter,
   normalizeProject,
   paginateMarkdown,
   readFileAsDataUrl,
@@ -89,6 +90,88 @@ function ToolButton({ icon: Icon, label, description, active, onClick, compact =
         <strong>{label}</strong>
       </span>
     </button>
+  );
+}
+
+function MarkdownGuide() {
+  return (
+    <details className="markdown-guide">
+      <summary>Markdown 語法與用法</summary>
+      <div className="markdown-guide-body">
+        <section className="markdown-guide-section">
+          <h3>基礎格式</h3>
+          <p>適合一般知識卡與條列內容。</p>
+          <pre>{`# 主標題
+## 章節標題
+- 重點一
+- 重點二
+1. 步驟一
+2. 步驟二
+> 引用內容`}</pre>
+        </section>
+
+        <section className="markdown-guide-section">
+          <h3>分頁</h3>
+          <p>用 `---` 強制切成下一張卡片。</p>
+          <pre>{`第一頁內容
+
+---
+
+第二頁內容`}</pre>
+        </section>
+
+        <section className="markdown-guide-section">
+          <h3>強調語法</h3>
+          <p>支援 md2card 常見擴充語法。</p>
+          <pre>{`這是 ==重點標示==
+這是 ^底線強調^
+**粗體**
+*斜體*`}</pre>
+        </section>
+
+        <section className="markdown-guide-section">
+          <h3>圖片</h3>
+          <p>一般圖片可直接插入，也可指定尺寸。</p>
+          <pre>{`![封面圖](https://example.com/cover.jpg)
+![產品示意|400x280](https://example.com/demo.jpg)`}</pre>
+        </section>
+
+        <section className="markdown-guide-section">
+          <h3>欄位排版</h3>
+          <p>相鄰欄位會自動組成雙欄或三欄。</p>
+          <pre>{`:::left
+- 左邊內容
+:::
+
+:::right
+- 右邊內容
+:::
+
+:::left
+左
+:::
+
+:::center
+中
+:::
+
+:::right
+右
+:::`}</pre>
+        </section>
+
+        <section className="markdown-guide-section">
+          <h3>Frontmatter</h3>
+          <p>放在最上方，可自動同步封面標題與作者。</p>
+          <pre>{`---
+title: 三步驟寫好知識卡
+author: @YourBrand
+---
+
+## 內容從這裡開始`}</pre>
+        </section>
+      </div>
+    </details>
   );
 }
 
@@ -243,19 +326,25 @@ function rgbString(rgb, alpha = 1) {
   return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
 }
 
-function buildExportThemeVars(theme) {
+function buildThemeVars(theme) {
   const base = hexToRgb(theme);
   const white = { r: 255, g: 255, b: 255 };
   const dark = { r: 15, g: 23, b: 42 };
+  const rose = hexToRgb("fb7185");
+  const amber = hexToRgb("f97316");
 
   return {
-    "--export-theme": rgbString(base),
-    "--export-theme-soft": rgbString(mixRgb(base, white, 0.84)),
-    "--export-theme-pale": rgbString(mixRgb(base, white, 0.92)),
-    "--export-theme-line": rgbString(mixRgb(base, white, 0.64)),
-    "--export-theme-deep": rgbString(mixRgb(base, dark, 0.26)),
-    "--export-theme-shadow": rgbString(mixRgb(base, white, 0.76)),
-    "--export-theme-tint": rgbString(base, 0.14)
+    "--theme": rgbString(base),
+    "--theme-soft": rgbString(mixRgb(base, white, 0.84)),
+    "--theme-pale": rgbString(mixRgb(base, white, 0.92)),
+    "--theme-line": rgbString(mixRgb(base, white, 0.64)),
+    "--theme-deep": rgbString(mixRgb(base, dark, 0.26)),
+    "--theme-shadow": rgbString(mixRgb(base, white, 0.76)),
+    "--theme-tint": rgbString(base, 0.14),
+    "--theme-surface": rgbString(mixRgb(base, white, 0.68)),
+    "--theme-ink": rgbString(mixRgb(base, dark, 0.28)),
+    "--theme-rose": rgbString(mixRgb(base, rose, 0.6)),
+    "--theme-accent": rgbString(mixRgb(base, amber, 0.72))
   };
 }
 
@@ -358,7 +447,7 @@ function GeneratorCard({
         <div
           className={`card-root variant-${variant} ${project.useDefaultBg ? "has-default-frame" : ""}`}
           ref={cardRef}
-          style={{ "--theme": project.theme }}
+          style={buildThemeVars(project.theme)}
         >
           {project.useDefaultBg ? (
             <div
@@ -454,7 +543,7 @@ function MergerCard({ project, previewScale, cardRef, displayIndex, shellClassNa
         <div
           className={`card-root variant-minimal ${project.useDefaultBgMerger ? "has-default-frame" : ""}`}
           ref={cardRef}
-          style={{ "--theme": project.theme }}
+          style={buildThemeVars(project.theme)}
         >
           {project.useDefaultBgMerger ? (
             <div
@@ -772,6 +861,24 @@ export default function App() {
   }, [effectivePreviewScale]);
 
   function updateProjectField(key, value) {
+    if (key === "content") {
+      const { metadata } = extractMd2CardFrontmatter(value);
+
+      setProject((prev) => ({
+        ...prev,
+        content: value,
+        title:
+          typeof metadata.title === "string" && metadata.title.trim()
+            ? metadata.title.trim()
+            : prev.title,
+        author:
+          typeof metadata.author === "string" && metadata.author.trim()
+            ? metadata.author.trim()
+            : prev.author
+      }));
+      return;
+    }
+
     setProject((prev) => ({
       ...prev,
       [key]: value
@@ -1087,11 +1194,8 @@ export default function App() {
     }
 
     const clone = node.cloneNode(true);
-    clone.classList.add("capture-clone", "export-safe");
+    clone.classList.add("capture-clone");
     clone.querySelectorAll('[data-export-remove="true"]').forEach((item) => item.remove());
-    Object.entries(buildExportThemeVars(project.theme)).forEach(([key, value]) => {
-      clone.style.setProperty(key, value);
-    });
 
     if (removePattern) {
       clone.querySelectorAll(".default-background-layer").forEach((item) => item.remove());
@@ -1105,7 +1209,9 @@ export default function App() {
       height: `${CANVAS.height}px`,
       transform: "none",
       margin: "0",
-      zIndex: "9999"
+      zIndex: "9999",
+      opacity: "1",
+      pointerEvents: "none"
     });
 
     document.body.appendChild(clone);
@@ -1144,6 +1250,14 @@ export default function App() {
     });
   }
 
+  function getGeneratorCaptureNode(index) {
+    return generatorCardRefs.current[index] || exportGeneratorRef.current;
+  }
+
+  function getMergerCaptureNode() {
+    return mergerCardRef.current || exportMergerRef.current;
+  }
+
   async function prepareMobileExportItems() {
     const selected =
       project.mode === "gen"
@@ -1173,7 +1287,7 @@ export default function App() {
 
           await waitForPaint();
 
-          const node = isMobile ? exportGeneratorRef.current : generatorCardRefs.current[index];
+          const node = getGeneratorCaptureNode(index);
           if (!node) {
             continue;
           }
@@ -1202,7 +1316,7 @@ export default function App() {
 
           await waitForPaint();
 
-          const node = isMobile ? exportMergerRef.current : mergerCardRef.current;
+          const node = getMergerCaptureNode();
           if (!node) {
             continue;
           }
@@ -1225,7 +1339,8 @@ export default function App() {
       updateMobileExportItems(nextItems);
     } catch (error) {
       console.error(error);
-      window.alert("圖片準備失敗。");
+      const message = error instanceof Error ? error.message : "未知錯誤";
+      window.alert(`圖片準備失敗：${message}`);
     } finally {
       setIsPreparingMobileExport(false);
     }
@@ -1256,7 +1371,7 @@ export default function App() {
           await waitForPaint();
         }
 
-        const node = isMobile ? exportGeneratorRef.current : generatorCardRefs.current[index];
+        const node = getGeneratorCaptureNode(index);
         if (!node) {
           continue;
         }
@@ -1300,7 +1415,9 @@ export default function App() {
 
     try {
       if (project.mergeOverlays.length === 1) {
-        const canvas = await captureNode(isMobile ? exportMergerRef.current : mergerCardRef.current);
+        await waitForPaint();
+        const node = getMergerCaptureNode();
+        const canvas = await captureNode(node);
         const blob = await canvasToBlob(canvas);
         downloadBlob(`merge-${Date.now()}.png`, blob);
         return;
@@ -1321,7 +1438,9 @@ export default function App() {
 
         await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-        const canvas = await captureNode(isMobile ? exportMergerRef.current : mergerCardRef.current);
+        await waitForPaint();
+        const node = getMergerCaptureNode();
+        const canvas = await captureNode(node);
         const blob = await canvasToBlob(canvas);
         zip.file(`merge-${index + 1}.png`, blob);
       }
@@ -1463,6 +1582,7 @@ export default function App() {
               value={project.content}
             />
           </label>
+          <MarkdownGuide />
         </ControlSection>
       );
     }
@@ -1944,7 +2064,7 @@ export default function App() {
           onStickerSelect={() => {}}
           previewScale={1}
           project={project}
-          selected
+          selected={false}
           stickers={project.cardIcons[String(Math.min(project.selectedCardIndex, Math.max(cards.length - 1, 0)))] || []}
           stylePreset={stylePreset}
           totalCards={cards.length}
