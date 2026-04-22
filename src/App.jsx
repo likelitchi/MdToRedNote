@@ -36,6 +36,7 @@ import {
   getStylePreset
 } from "./constants";
 import {
+  canvasToBlob,
   downloadBlob,
   downloadJson,
   extractMd2CardFrontmatter,
@@ -368,6 +369,147 @@ function base64PngToBlob(base64) {
 }
 
 const EXPORT_BATCH_SIZE = 4;
+
+function getExportServiceUnavailableMessage() {
+  return "匯出服務不可用。請使用 `npm run dev` 或 `npm run preview` 啟動；純靜態部署目前會改用瀏覽器備援匯出。";
+}
+
+function absolutizeExportUrl(rawUrl = "") {
+  const value = String(rawUrl || "").trim();
+  if (!value || value.startsWith("data:") || value.startsWith("blob:") || value.startsWith("#")) {
+    return value;
+  }
+
+  try {
+    return new URL(value, window.location.origin).toString();
+  } catch {
+    return value;
+  }
+}
+
+function absolutizeInlineStyleUrls(styleText = "") {
+  return String(styleText || "").replace(/url\((['"]?)(.*?)\1\)/g, (match, quote = "", url = "") => {
+    const resolved = absolutizeExportUrl(url);
+    return `url(${quote}${resolved}${quote})`;
+  });
+}
+
+function prepareNodeForClientExport(node) {
+  if (!node) {
+    return;
+  }
+
+  const elements = [node, ...Array.from(node.querySelectorAll("*"))];
+  elements.forEach((element) => {
+    if (element.tagName === "IMG") {
+      const src = element.getAttribute("src");
+      if (src) {
+        element.setAttribute("src", absolutizeExportUrl(src));
+      }
+    }
+
+    const style = element.getAttribute("style");
+    if (style) {
+      element.setAttribute("style", absolutizeInlineStyleUrls(style));
+    }
+  });
+}
+
+async function renderHtmlToBlobClient(html, styles, width = CANVAS.width, height = CANVAS.height) {
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = String(html || "").trim();
+  const root = wrapper.firstElementChild;
+
+  if (!root) {
+    throw new Error("Capture node not found");
+  }
+
+  prepareNodeForClientExport(root);
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  svg.setAttribute("width", String(width));
+  svg.setAttribute("height", String(height));
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+  const foreignObject = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+  foreignObject.setAttribute("width", "100%");
+  foreignObject.setAttribute("height", "100%");
+
+  const container = document.createElement("div");
+  container.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+  container.style.width = `${width}px`;
+  container.style.height = `${height}px`;
+  container.style.overflow = "hidden";
+
+  const styleNode = document.createElement("style");
+  styleNode.textContent = String(styles || "");
+  container.appendChild(styleNode);
+  container.appendChild(root);
+  foreignObject.appendChild(container);
+  svg.appendChild(foreignObject);
+
+  const svgBlob = new Blob([new XMLSerializer().serializeToString(svg)], {
+    type: "image/svg+xml;charset=utf-8"
+  });
+  const url = URL.createObjectURL(svgBlob);
+
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const nextImage = new Image();
+      nextImage.decoding = "async";
+      nextImage.onload = () => resolve(nextImage);
+      nextImage.onerror = () => reject(new Error("瀏覽器備援匯出失敗"));
+      nextImage.src = url;
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      throw new Error("Canvas context unavailable");
+    }
+
+    context.clearRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+
+    return await canvasToBlob(canvas);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function renderItemsToBlobsClient(items, styles) {
+  const blobs = [];
+
+  for (const item of items) {
+    blobs.push(await renderHtmlToBlobClient(item?.html, styles, item?.width || CANVAS.width, item?.height || CANVAS.height));
+  }
+
+  return blobs;
+}
+
+async function readExportError(response) {
+  const contentType = response.headers.get("content-type") || "";
+  const bodyText = await response.text();
+
+  if (contentType.includes("application/json")) {
+    try {
+      const payload = JSON.parse(bodyText);
+      return payload?.error || "Export failed";
+    } catch {
+      return bodyText || "Export failed";
+    }
+  }
+
+  if (response.status === 404 || contentType.includes("text/html")) {
+    return getExportServiceUnavailableMessage();
+  }
+
+  return bodyText || `Export failed (HTTP ${response.status})`;
+}
 
 function CoverCard({ project, stylePreset }) {
   const titleLines = splitTitleLines(project.title);
@@ -1312,36 +1454,41 @@ export default function App() {
     const clone = buildCaptureClone(node, options);
     const styles = sharedStyles || (await collectExportStyles());
 
-    const response = await fetch("/__export_png", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        html: clone.outerHTML,
-        styles,
-        width: CANVAS.width,
-        height: CANVAS.height,
-        scale: 1,
-        transparent: true,
-        baseUrl: `${window.location.origin}/`
-      })
-    });
+    try {
+      const response = await fetch("/__export_png", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          html: clone.outerHTML,
+          styles,
+          width: CANVAS.width,
+          height: CANVAS.height,
+          scale: 1,
+          transparent: true,
+          baseUrl: `${window.location.origin}/`
+        })
+      });
 
-    if (!response.ok) {
-      let message = "Export failed";
-
-      try {
-        const payload = await response.json();
-        message = payload?.error || message;
-      } catch {
-        // Ignore JSON parse failures and use fallback message.
+      if (!response.ok) {
+        throw new Error(await readExportError(response));
       }
 
-      throw new Error(message);
-    }
+      return response.blob();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      const shouldUseClientFallback =
+        message.includes("/__export_png") ||
+        message.includes("匯出服務不可用") ||
+        message.toLowerCase().includes("failed to fetch");
 
-    return response.blob();
+      if (!shouldUseClientFallback) {
+        throw error;
+      }
+
+      return renderHtmlToBlobClient(clone.outerHTML, styles, CANVAS.width, CANVAS.height);
+    }
   }
 
   async function exportItemsToBlobs(items, sharedStyles) {
@@ -1350,33 +1497,38 @@ export default function App() {
       return [];
     }
 
-    const response = await fetch("/__export_png", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        items,
-        styles,
-        baseUrl: `${window.location.origin}/`
-      })
-    });
+    try {
+      const response = await fetch("/__export_png", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          items,
+          styles,
+          baseUrl: `${window.location.origin}/`
+        })
+      });
 
-    if (!response.ok) {
-      let message = "Export failed";
-
-      try {
-        const payload = await response.json();
-        message = payload?.error || message;
-      } catch {
-        // Ignore JSON parse failures and use fallback message.
+      if (!response.ok) {
+        throw new Error(await readExportError(response));
       }
 
-      throw new Error(message);
-    }
+      const payload = await response.json();
+      return Array.isArray(payload?.images) ? payload.images.map((item) => base64PngToBlob(item)) : [];
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      const shouldUseClientFallback =
+        message.includes("/__export_png") ||
+        message.includes("匯出服務不可用") ||
+        message.toLowerCase().includes("failed to fetch");
 
-    const payload = await response.json();
-    return Array.isArray(payload?.images) ? payload.images.map((item) => base64PngToBlob(item)) : [];
+      if (!shouldUseClientFallback) {
+        throw error;
+      }
+
+      return renderItemsToBlobsClient(items, styles);
+    }
   }
 
   async function captureNode(node, options = {}, sharedStyles) {

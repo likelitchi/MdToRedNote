@@ -4,7 +4,6 @@ import puppeteer from "puppeteer";
 
 function exportCapturePlugin() {
   let browserPromise;
-  let pagePromise;
 
   async function getBrowser() {
     if (!browserPromise) {
@@ -18,22 +17,17 @@ function exportCapturePlugin() {
   }
 
   async function getPage() {
-    if (!pagePromise) {
-      pagePromise = getBrowser().then(async (browser) => {
-        const page = await browser.newPage();
-        await page.setRequestInterception(true);
-        page.on("request", (request) => {
-          if (request.resourceType() === "font") {
-            request.continue();
-            return;
-          }
-          request.continue();
-        });
-        return page;
-      });
-    }
-
-    return pagePromise;
+    const browser = await getBrowser();
+    const page = await browser.newPage();
+    await page.setRequestInterception(true);
+    page.on("request", (request) => {
+      if (request.resourceType() === "font") {
+        request.continue();
+        return;
+      }
+      request.continue();
+    });
+    return page;
   }
 
   function attachMiddleware(server) {
@@ -69,96 +63,101 @@ function exportCapturePlugin() {
         }
 
         const page = await getPage();
-        const exportItems = Array.isArray(items)
-          ? items.filter((item) => item?.html)
-          : [{ html, width, height, scale, transparent }];
 
-        const results = [];
+        try {
+          const exportItems = Array.isArray(items)
+            ? items.filter((item) => item?.html)
+            : [{ html, width, height, scale, transparent }];
 
-        for (const item of exportItems) {
-          await page.setViewport({
-            width: item.width || width,
-            height: item.height || height,
-            deviceScaleFactor: item.scale || scale
-          });
+          const results = [];
 
-          await page.setContent(
-            `<!doctype html>
-            <html lang="zh-Hant">
-              <head>
-                <meta charset="UTF-8" />
-                <base href="${baseUrl}" />
-                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                <style>
-                  html, body {
-                    margin: 0;
-                    padding: 0;
-                    width: ${item.width || width}px;
-                    min-width: ${item.width || width}px;
-                    background: transparent;
-                  }
+          for (const item of exportItems) {
+            await page.setViewport({
+              width: item.width || width,
+              height: item.height || height,
+              deviceScaleFactor: item.scale || scale
+            });
 
-                  body {
-                    overflow: hidden;
-                  }
-                </style>
-                <style>${styles}</style>
-              </head>
-              <body>
-                <div id="capture-root">${item.html}</div>
-              </body>
-            </html>`,
-            { waitUntil: "load" }
-          );
-
-          await page.evaluate(async () => {
-            if (document.fonts?.ready) {
-              try {
-                await document.fonts.ready;
-              } catch {
-                // Ignore font readiness failures in export.
-              }
-            }
-
-            await Promise.all(
-              Array.from(document.images || []).map(
-                (image) =>
-                  new Promise((resolve) => {
-                    if (image.complete) {
-                      resolve();
-                      return;
+            await page.setContent(
+              `<!doctype html>
+              <html lang="zh-Hant">
+                <head>
+                  <meta charset="UTF-8" />
+                  <base href="${baseUrl}" />
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                  <style>
+                    html, body {
+                      margin: 0;
+                      padding: 0;
+                      width: ${item.width || width}px;
+                      min-width: ${item.width || width}px;
+                      background: transparent;
                     }
 
-                    image.addEventListener("load", resolve, { once: true });
-                    image.addEventListener("error", resolve, { once: true });
-                  }),
-              ),
+                    body {
+                      overflow: hidden;
+                    }
+                  </style>
+                  <style>${styles}</style>
+                </head>
+                <body>
+                  <div id="capture-root">${item.html}</div>
+                </body>
+              </html>`,
+              { waitUntil: "load" }
             );
-          });
 
-          const target = await page.$("#capture-root");
-          if (!target) {
-            throw new Error("Capture root not found");
+            await page.evaluate(async () => {
+              if (document.fonts?.ready) {
+                try {
+                  await document.fonts.ready;
+                } catch {
+                  // Ignore font readiness failures in export.
+                }
+              }
+
+              await Promise.all(
+                Array.from(document.images || []).map(
+                  (image) =>
+                    new Promise((resolve) => {
+                      if (image.complete) {
+                        resolve();
+                        return;
+                      }
+
+                      image.addEventListener("load", resolve, { once: true });
+                      image.addEventListener("error", resolve, { once: true });
+                    }),
+                ),
+              );
+            });
+
+            const target = await page.$("#capture-root");
+            if (!target) {
+              throw new Error("Capture root not found");
+            }
+
+            const buffer = await target.screenshot({
+              type: "png",
+              omitBackground: item.transparent ?? transparent
+            });
+
+            results.push(buffer);
           }
 
-          const buffer = await target.screenshot({
-            type: "png",
-            omitBackground: item.transparent ?? transparent
-          });
+          if (Array.isArray(items)) {
+            res.statusCode = 200;
+            res.setHeader("Content-Type", "application/json; charset=utf-8");
+            res.end(JSON.stringify({ images: results.map((item) => item.toString("base64")) }));
+            return;
+          }
 
-          results.push(buffer);
-        }
-
-        if (Array.isArray(items)) {
           res.statusCode = 200;
-          res.setHeader("Content-Type", "application/json; charset=utf-8");
-          res.end(JSON.stringify({ images: results.map((item) => item.toString("base64")) }));
-          return;
+          res.setHeader("Content-Type", "image/png");
+          res.end(results[0]);
+        } finally {
+          await page.close().catch(() => {});
         }
-
-        res.statusCode = 200;
-        res.setHeader("Content-Type", "image/png");
-        res.end(results[0]);
       } catch (error) {
         res.statusCode = 500;
         res.setHeader("Content-Type", "application/json; charset=utf-8");
