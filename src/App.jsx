@@ -42,6 +42,9 @@ import {
   normalizeProject,
   paginateMarkdown,
   readFileAsDataUrl,
+  smartFormatCardMarkdown,
+  smartFormatMarkdownInput,
+  smartRewriteToRedNoteMarkdown,
   splitTitleLines
 } from "./utils";
 
@@ -916,6 +919,21 @@ export default function App() {
       ...prev,
       footerMode: value
     }));
+  }
+
+  function formatMarkdownContent() {
+    const formatted = smartFormatMarkdownInput(project.content);
+    updateProjectField("content", formatted);
+  }
+
+  function formatCardMarkdownContent() {
+    const formatted = smartFormatCardMarkdown(project.content);
+    updateProjectField("content", formatted);
+  }
+
+  function rewriteToRedNoteMarkdownContent() {
+    const formatted = smartRewriteToRedNoteMarkdown(project.content);
+    updateProjectField("content", formatted);
   }
 
   function setActiveTool(toolId) {
@@ -1827,7 +1845,27 @@ export default function App() {
             />
           </label>
           <label className="field">
-            <span>Markdown 內容</span>
+            <span className="field-label-row">
+              <span>Markdown 內容</span>
+              <span className="field-label-actions">
+                <button className="field-inline-action" onClick={formatMarkdownContent} type="button">
+                  <Sparkles size={14} strokeWidth={2.2} />
+                  <span>整理格式</span>
+                </button>
+                <button className="field-inline-action is-primary" onClick={formatCardMarkdownContent} type="button">
+                  <Sparkles size={14} strokeWidth={2.2} />
+                  <span>整理成卡片 Markdown</span>
+                </button>
+                <button
+                  className="field-inline-action is-accent"
+                  onClick={rewriteToRedNoteMarkdownContent}
+                  type="button"
+                >
+                  <Sparkles size={14} strokeWidth={2.2} />
+                  <span>整理成小紅書風格</span>
+                </button>
+              </span>
+            </span>
             <textarea
               className="markdown-input"
               onChange={(event) => updateProjectField("content", event.target.value)}
@@ -2138,9 +2176,6 @@ export default function App() {
             </ToolbarButton>
             <ToolbarButton icon={RefreshCcw} onClick={resetProject}>
               重置
-            </ToolbarButton>
-            <ToolbarButton icon={Download} onClick={handleMainExport} variant="primary">
-              {project.mode === "merge" && project.mergeOverlays.length > 1 ? "批量下載" : "下載"}
             </ToolbarButton>
           </div>
         </div>

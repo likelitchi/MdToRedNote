@@ -430,6 +430,47 @@ img {
   color: #334155;
 }
 
+.field > .field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.field-label-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.field-inline-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #d7e0ea;
+  border-radius: 999px;
+  background: #fff;
+  color: #334155;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.field-inline-action.is-primary {
+  border-color: transparent;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(56, 189, 248, 0.18));
+  color: #1d4ed8;
+}
+
+.field-inline-action.is-accent {
+  border-color: transparent;
+  background: linear-gradient(135deg, rgba(244, 114, 182, 0.14), rgba(251, 146, 60, 0.18));
+  color: #be185d;
+}
+
 .field input[type="text"],
 .field textarea,
 .field select {
@@ -4015,6 +4056,20 @@ img {
   .tool-panel .chip-btn,
   .tool-panel .upload-card span {
     font-size: 0.68rem;
+  }
+
+  .tool-panel .field > .field-label-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tool-panel .field-label-actions {
+    justify-content: flex-start;
+  }
+
+  .tool-panel .field-inline-action {
+    font-size: 0.64rem;
+    padding: 5px 9px;
   }
 
   .tool-panel .field input[type="text"],
