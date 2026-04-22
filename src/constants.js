@@ -133,6 +133,9 @@ export const DEFAULT_PROJECT = {
   useDefaultBgMerger: true,
   mergeBg: null,
   mergeOverlays: [],
+  mergeOverlayScale: 1,
+  mergeOverlayOffsetX: 0,
+  mergeOverlayOffsetY: 0,
   currentMergeIndex: 0,
   showAuthor: false,
   stickerTab: "princess"

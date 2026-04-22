@@ -1,16 +1,64 @@
+import fs from "node:fs";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import puppeteer from "puppeteer";
+
+const CHROME_EXECUTABLE_CANDIDATES = [
+  process.env.PUPPETEER_EXECUTABLE_PATH,
+  process.env.CHROME_PATH,
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "/Applications/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+  "/Applications/Chromium.app/Contents/MacOS/Chromium",
+  "/usr/bin/google-chrome",
+  "/usr/bin/google-chrome-stable",
+  "/usr/bin/chromium-browser",
+  "/usr/bin/chromium"
+].filter(Boolean);
+
+function resolveChromeExecutablePath() {
+  return CHROME_EXECUTABLE_CANDIDATES.find((candidate) => fs.existsSync(candidate));
+}
+
+function formatLaunchError(error) {
+  const chromeExecutablePath = resolveChromeExecutablePath();
+  const originalMessage = error instanceof Error ? error.message : "Unknown launch error";
+
+  return [
+    originalMessage,
+    "",
+    "No bundled Puppeteer browser was found.",
+    chromeExecutablePath
+      ? `Fallback system Chrome was detected at: ${chromeExecutablePath}`
+      : "No compatible system Chrome executable was detected.",
+    "Install one with `npm run install:chrome`, or set `PUPPETEER_EXECUTABLE_PATH` / `CHROME_PATH`."
+  ].join("\n");
+}
 
 function exportCapturePlugin() {
   let browserPromise;
 
   async function getBrowser() {
     if (!browserPromise) {
-      browserPromise = puppeteer.launch({
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"]
-      });
+      browserPromise = (async () => {
+        const launchOptions = {
+          headless: true,
+          args: ["--no-sandbox", "--disable-setuid-sandbox"]
+        };
+
+        try {
+          return await puppeteer.launch(launchOptions);
+        } catch (error) {
+          const executablePath = resolveChromeExecutablePath();
+          if (executablePath) {
+            return puppeteer.launch({
+              ...launchOptions,
+              executablePath
+            });
+          }
+
+          throw new Error(formatLaunchError(error));
+        }
+      })();
     }
 
     return browserPromise;

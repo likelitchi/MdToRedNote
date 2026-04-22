@@ -623,6 +623,15 @@ export function normalizeProject(raw = {}) {
   merged.mergeOverlays = Array.isArray(merged.mergeOverlays)
     ? merged.mergeOverlays.filter(Boolean)
     : [];
+  merged.mergeOverlayScale = Number.isFinite(merged.mergeOverlayScale)
+    ? Math.min(3, Math.max(0.25, merged.mergeOverlayScale))
+    : 1;
+  merged.mergeOverlayOffsetX = Number.isFinite(merged.mergeOverlayOffsetX)
+    ? Math.min(800, Math.max(-800, merged.mergeOverlayOffsetX))
+    : 0;
+  merged.mergeOverlayOffsetY = Number.isFinite(merged.mergeOverlayOffsetY)
+    ? Math.min(800, Math.max(-800, merged.mergeOverlayOffsetY))
+    : 0;
   merged.cardIcons = normalizeStickerCollections(merged.cardIcons);
 
   return merged;

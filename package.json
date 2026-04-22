@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "install:chrome": "npx puppeteer browsers install chrome"
   },
   "dependencies": {
     "file-saver": "^2.0.5",

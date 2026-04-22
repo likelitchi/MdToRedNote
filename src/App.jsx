@@ -369,6 +369,14 @@ function base64PngToBlob(base64) {
 }
 
 const EXPORT_BATCH_SIZE = 4;
+const MERGE_OVERLAY_SCALE_MIN = 0.25;
+const MERGE_OVERLAY_SCALE_MAX = 3;
+const MERGE_OVERLAY_SCALE_STEP = 0.05;
+const MERGE_OVERLAY_OFFSET_MIN = -800;
+const MERGE_OVERLAY_OFFSET_MAX = 800;
+const MERGE_OVERLAY_OFFSET_STEP = 2;
+const TRANSPARENT_PIXEL_DATA_URL =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wIAAgMBApQf4QAAAABJRU5ErkJggg==";
 
 function getExportServiceUnavailableMessage() {
   return "匯出服務不可用。請使用 `npm run dev` 或 `npm run preview` 啟動；純靜態部署目前會改用瀏覽器備援匯出。";
@@ -415,6 +423,69 @@ function prepareNodeForClientExport(node) {
   });
 }
 
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error || new Error("Failed to convert blob to data URL"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function inlineImageSourceForExport(src, cache) {
+  const value = absolutizeExportUrl(src);
+  if (!value) {
+    return TRANSPARENT_PIXEL_DATA_URL;
+  }
+
+  if (value.startsWith("data:") || value.startsWith("blob:")) {
+    return value;
+  }
+
+  if (cache.has(value)) {
+    return cache.get(value);
+  }
+
+  const promise = (async () => {
+    try {
+      const response = await fetch(value, { mode: "cors" });
+      if (!response.ok) {
+        throw new Error(`Failed to load image: ${value}`);
+      }
+
+      const blob = await response.blob();
+      return await blobToDataUrl(blob);
+    } catch {
+      return TRANSPARENT_PIXEL_DATA_URL;
+    }
+  })();
+
+  cache.set(value, promise);
+  return promise;
+}
+
+async function inlineImagesForClientExport(node) {
+  if (!node) {
+    return;
+  }
+
+  const cache = new Map();
+  const images = Array.from(node.querySelectorAll("img"));
+
+  await Promise.all(
+    images.map(async (image) => {
+      const src = image.getAttribute("src");
+      if (!src) {
+        return;
+      }
+
+      const inlinedSrc = await inlineImageSourceForExport(src, cache);
+      image.setAttribute("src", inlinedSrc);
+      image.setAttribute("crossorigin", "anonymous");
+    }),
+  );
+}
+
 async function renderHtmlToBlobClient(html, styles, width = CANVAS.width, height = CANVAS.height) {
   const wrapper = document.createElement("div");
   wrapper.innerHTML = String(html || "").trim();
@@ -425,6 +496,7 @@ async function renderHtmlToBlobClient(html, styles, width = CANVAS.width, height
   }
 
   prepareNodeForClientExport(root);
+  await inlineImagesForClientExport(root);
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
@@ -543,6 +615,19 @@ function CoverCard({ project, stylePreset }) {
       </div>
     </div>
   );
+}
+
+function formatScaleLabel(value) {
+  return `${Math.round(Number(value || 1) * 100)}%`;
+}
+
+function formatOffsetLabel(value) {
+  const nextValue = Math.round(Number(value || 0));
+  if (nextValue > 0) {
+    return `+${nextValue}px`;
+  }
+
+  return `${nextValue}px`;
 }
 
 function ContentCard({ html, cardNumber, project, stylePreset }) {
@@ -683,7 +768,10 @@ function MergerCard({ project, previewScale, cardRef, displayIndex, shellClassNa
     left: 0,
     right: 0,
     top: 120,
-    bottom: 60
+    bottom: 60,
+    "--merge-overlay-scale": project.mergeOverlayScale || 1,
+    "--merge-overlay-offset-x": `${project.mergeOverlayOffsetX || 0}px`,
+    "--merge-overlay-offset-y": `${project.mergeOverlayOffsetY || 0}px`
   };
 
   return (
@@ -717,7 +805,9 @@ function MergerCard({ project, previewScale, cardRef, displayIndex, shellClassNa
           <div className="card-surface merge-surface">
             <div className="merge-media-frame" style={mergeFrameStyle}>
               {contentImage ? (
-                <img alt="" className="merge-content-image" src={contentImage} />
+                <div className="merge-content-stage">
+                  <img alt="" className="merge-content-image" src={contentImage} />
+                </div>
               ) : (
                 <div className="merge-placeholder">尚未上傳內容</div>
               )}
@@ -2222,6 +2312,75 @@ export default function App() {
             </label>
           </div>
           <div className="overlay-count">目前內容數量：{project.mergeOverlays.length}</div>
+          <label className="field">
+            <span className="field-label-row">
+              <span>內容縮放</span>
+              <span className="field-value-chip">{formatScaleLabel(project.mergeOverlayScale)}</span>
+            </span>
+            <input
+              max={String(MERGE_OVERLAY_SCALE_MAX)}
+              min={String(MERGE_OVERLAY_SCALE_MIN)}
+              onChange={(event) =>
+                updateProjectField("mergeOverlayScale", Number(event.target.value))
+              }
+              step={String(MERGE_OVERLAY_SCALE_STEP)}
+              type="range"
+              value={project.mergeOverlayScale}
+            />
+            <span className="field-hint">控制上傳內容圖的縮放倍率，預覽與匯出會同步套用。</span>
+          </label>
+          <label className="field">
+            <span className="field-label-row">
+              <span>X 軸位移</span>
+              <span className="field-value-chip">{formatOffsetLabel(project.mergeOverlayOffsetX)}</span>
+            </span>
+            <input
+              max={String(MERGE_OVERLAY_OFFSET_MAX)}
+              min={String(MERGE_OVERLAY_OFFSET_MIN)}
+              onChange={(event) =>
+                updateProjectField("mergeOverlayOffsetX", Number(event.target.value))
+              }
+              step={String(MERGE_OVERLAY_OFFSET_STEP)}
+              type="range"
+              value={project.mergeOverlayOffsetX}
+            />
+          </label>
+          <label className="field">
+            <span className="field-label-row">
+              <span>Y 軸位移</span>
+              <span className="field-value-chip">{formatOffsetLabel(project.mergeOverlayOffsetY)}</span>
+            </span>
+            <input
+              max={String(MERGE_OVERLAY_OFFSET_MAX)}
+              min={String(MERGE_OVERLAY_OFFSET_MIN)}
+              onChange={(event) =>
+                updateProjectField("mergeOverlayOffsetY", Number(event.target.value))
+              }
+              step={String(MERGE_OVERLAY_OFFSET_STEP)}
+              type="range"
+              value={project.mergeOverlayOffsetY}
+            />
+            <span className="field-hint">`X` 控制左右，`Y` 控制上下，預覽與匯出同步。</span>
+          </label>
+          <div className="field-grid">
+            <button
+              className="seg-btn"
+              onClick={() => updateProjectField("mergeOverlayScale", 1)}
+              type="button"
+            >
+              縮放重置
+            </button>
+            <button
+              className="seg-btn"
+              onClick={() => {
+                updateProjectField("mergeOverlayOffsetX", 0);
+                updateProjectField("mergeOverlayOffsetY", 0);
+              }}
+              type="button"
+            >
+              位置重置
+            </button>
+          </div>
         </ControlSection>
       );
     }
