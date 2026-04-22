@@ -22,19 +22,20 @@ import {
   useRef,
   useState
 } from "react";
-import html2canvas from "html2canvas";
 import JSZip from "jszip";
 import {
   CANVAS,
   DEFAULT_BACKGROUND,
+  FONT_PRESETS,
   STORAGE_KEY,
   STICKER_SETS,
   STICKER_TABS,
+  STYLE_GROUPS,
   STYLE_PRESETS,
+  getFontPreset,
   getStylePreset
 } from "./constants";
 import {
-  canvasToBlob,
   downloadBlob,
   downloadJson,
   extractMd2CardFrontmatter,
@@ -326,12 +327,13 @@ function rgbString(rgb, alpha = 1) {
   return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
 }
 
-function buildThemeVars(theme) {
+function buildThemeVars(theme, fontId) {
   const base = hexToRgb(theme);
   const white = { r: 255, g: 255, b: 255 };
   const dark = { r: 15, g: 23, b: 42 };
   const rose = hexToRgb("fb7185");
   const amber = hexToRgb("f97316");
+  const fontPreset = getFontPreset(fontId);
 
   return {
     "--theme": rgbString(base),
@@ -344,9 +346,25 @@ function buildThemeVars(theme) {
     "--theme-surface": rgbString(mixRgb(base, white, 0.68)),
     "--theme-ink": rgbString(mixRgb(base, dark, 0.28)),
     "--theme-rose": rgbString(mixRgb(base, rose, 0.6)),
-    "--theme-accent": rgbString(mixRgb(base, amber, 0.72))
+    "--theme-accent": rgbString(mixRgb(base, amber, 0.72)),
+    "--font-ui-sans": fontPreset.sans,
+    "--font-ui-serif": fontPreset.serif,
+    "--font-ui-rounded": fontPreset.rounded
   };
 }
+
+function base64PngToBlob(base64) {
+  const binary = window.atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return new Blob([bytes], { type: "image/png" });
+}
+
+const EXPORT_BATCH_SIZE = 4;
 
 function CoverCard({ project, stylePreset }) {
   const titleLines = splitTitleLines(project.title);
@@ -447,7 +465,7 @@ function GeneratorCard({
         <div
           className={`card-root variant-${variant} ${project.useDefaultBg ? "has-default-frame" : ""}`}
           ref={cardRef}
-          style={buildThemeVars(project.theme)}
+          style={buildThemeVars(project.theme, project.font)}
         >
           {project.useDefaultBg ? (
             <div
@@ -543,7 +561,7 @@ function MergerCard({ project, previewScale, cardRef, displayIndex, shellClassNa
         <div
           className={`card-root variant-minimal ${project.useDefaultBgMerger ? "has-default-frame" : ""}`}
           ref={cardRef}
-          style={buildThemeVars(project.theme)}
+          style={buildThemeVars(project.theme, project.font)}
         >
           {project.useDefaultBgMerger ? (
             <div
@@ -607,6 +625,10 @@ export default function App() {
   const mergerCardRef = useRef(null);
   const exportGeneratorRef = useRef(null);
   const exportMergerRef = useRef(null);
+  const exportStylesCacheRef = useRef({
+    hrefs: "",
+    css: ""
+  });
   const dragRef = useRef(null);
   const previewTouchRef = useRef({
     startX: 0,
@@ -621,6 +643,10 @@ export default function App() {
   });
 
   const stylePreset = getStylePreset(project.style);
+  const groupedStylePresets = STYLE_GROUPS.map((group) => ({
+    ...group,
+    items: STYLE_PRESETS.filter((item) => item.group === group.id)
+  })).filter((group) => group.items.length);
   const currentTools = project.mode === "gen" ? GENERATOR_TOOLS : MERGER_TOOLS;
   const activeTool = activeToolByMode[project.mode];
   const cards = [{ kind: "cover" }, ...pages.map((html) => ({ kind: "content", html }))];
@@ -1162,74 +1188,202 @@ export default function App() {
     }
   }
 
-  async function waitForRenderableAssets(root) {
-    if (document.fonts?.ready) {
-      try {
-        await document.fonts.ready;
-      } catch {
-        // Ignore font readiness failures and continue export.
-      }
-    }
-
-    const images = Array.from(root.querySelectorAll("img"));
-    await Promise.all(
-      images.map(
-        (image) =>
-          new Promise((resolve) => {
-            if (image.complete) {
-              resolve();
-              return;
-            }
-
-            image.onload = () => resolve();
-            image.onerror = () => resolve();
-          }),
-      ),
-    );
-  }
-
-  async function captureNode(node, { removePattern = false } = {}) {
+  function buildCaptureClone(node, { removePattern = false } = {}) {
     if (!node) {
       throw new Error("Capture node not found");
     }
 
-    const clone = node.cloneNode(true);
+    const source =
+      node.classList?.contains("preview-card-shell") ? node : node.closest?.(".preview-card-shell") || node;
+    const clone = source.cloneNode(true);
     clone.classList.add("capture-clone");
+    clone.classList.remove("is-selected");
     clone.querySelectorAll('[data-export-remove="true"]').forEach((item) => item.remove());
 
     if (removePattern) {
       clone.querySelectorAll(".default-background-layer").forEach((item) => item.remove());
     }
 
+    const clonedShell = clone.classList.contains("preview-card-shell") ? clone : null;
+    const clonedTransform = clone.querySelector(".preview-card-transform");
+    const clonedCardRoot = clone.querySelector(".card-root");
+
+    if (clonedShell) {
+      Object.assign(clonedShell.style, {
+        width: `${CANVAS.width}px`,
+        height: `${CANVAS.height}px`,
+        background: "transparent",
+        boxShadow: "none",
+        borderRadius: "0"
+      });
+    }
+
+    if (clonedTransform) {
+      Object.assign(clonedTransform.style, {
+        width: `${CANVAS.width}px`,
+        height: `${CANVAS.height}px`,
+        transform: "none"
+      });
+    }
+
+    if (clonedCardRoot) {
+      Object.assign(clonedCardRoot.style, {
+        width: `${CANVAS.width}px`,
+        height: `${CANVAS.height}px`
+      });
+    }
+
     Object.assign(clone.style, {
-      position: "fixed",
-      top: "0",
-      left: "-12000px",
       width: `${CANVAS.width}px`,
       height: `${CANVAS.height}px`,
       transform: "none",
-      margin: "0",
-      zIndex: "9999",
-      opacity: "1",
-      pointerEvents: "none"
+      margin: "0"
     });
 
-    document.body.appendChild(clone);
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    await waitForRenderableAssets(clone);
+    return clone;
+  }
 
-    try {
-      return await html2canvas(clone, {
+  async function collectExportStyles() {
+    const styleNodes = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'));
+    const hrefSignature = styleNodes
+      .map((node) => {
+        if (node.tagName === "STYLE") {
+          return `style:${node.textContent?.length || 0}`;
+        }
+
+        return `link:${node.getAttribute("href") || ""}`;
+      })
+      .join("|");
+
+    if (exportStylesCacheRef.current.hrefs === hrefSignature && exportStylesCacheRef.current.css) {
+      return exportStylesCacheRef.current.css;
+    }
+
+    const chunks = [];
+
+    for (const node of styleNodes) {
+      if (node.tagName === "STYLE") {
+        chunks.push(node.textContent || "");
+        continue;
+      }
+
+      if (node.tagName === "LINK") {
+        const href = node.getAttribute("href");
+        if (!href) {
+          continue;
+        }
+
+        const response = await fetch(new URL(href, window.location.origin).toString());
+        if (!response.ok) {
+          throw new Error(`Failed to load stylesheet: ${href}`);
+        }
+
+        chunks.push(await response.text());
+      }
+    }
+
+    const css = chunks.join("\n");
+    exportStylesCacheRef.current = {
+      hrefs: hrefSignature,
+      css
+    };
+    return css;
+  }
+
+  async function exportNodeToBlob(node, options = {}, sharedStyles) {
+    const clone = buildCaptureClone(node, options);
+    const styles = sharedStyles || (await collectExportStyles());
+
+    const response = await fetch("/__export_png", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        html: clone.outerHTML,
+        styles,
         width: CANVAS.width,
         height: CANVAS.height,
-        backgroundColor: "#ffffff",
         scale: 1,
-        useCORS: true,
-        allowTaint: true,
-        logging: false
-      });
-    } finally {
-      clone.remove();
+        transparent: true,
+        baseUrl: `${window.location.origin}/`
+      })
+    });
+
+    if (!response.ok) {
+      let message = "Export failed";
+
+      try {
+        const payload = await response.json();
+        message = payload?.error || message;
+      } catch {
+        // Ignore JSON parse failures and use fallback message.
+      }
+
+      throw new Error(message);
+    }
+
+    return response.blob();
+  }
+
+  async function exportItemsToBlobs(items, sharedStyles) {
+    const styles = sharedStyles || (await collectExportStyles());
+    if (!items.length) {
+      return [];
+    }
+
+    const response = await fetch("/__export_png", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        items,
+        styles,
+        baseUrl: `${window.location.origin}/`
+      })
+    });
+
+    if (!response.ok) {
+      let message = "Export failed";
+
+      try {
+        const payload = await response.json();
+        message = payload?.error || message;
+      } catch {
+        // Ignore JSON parse failures and use fallback message.
+      }
+
+      throw new Error(message);
+    }
+
+    const payload = await response.json();
+    return Array.isArray(payload?.images) ? payload.images.map((item) => base64PngToBlob(item)) : [];
+  }
+
+  async function captureNode(node, options = {}, sharedStyles) {
+    try {
+      return await exportNodeToBlob(node, options, sharedStyles);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (message.toLowerCase().includes("failed to fetch")) {
+        throw new Error("匯出服務尚未啟動，請重新執行 `npm run dev` 後再試");
+      }
+
+      throw error;
+    }
+  }
+
+  async function captureItems(items, sharedStyles) {
+    try {
+      return await exportItemsToBlobs(items, sharedStyles);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (message.toLowerCase().includes("failed to fetch")) {
+        throw new Error("匯出服務尚未啟動，請重新執行 `npm run dev` 後再試");
+      }
+
+      throw error;
     }
   }
 
@@ -1258,6 +1412,40 @@ export default function App() {
     return mergerCardRef.current || exportMergerRef.current;
   }
 
+  function createExportItem(node, options = {}) {
+    return {
+      html: buildCaptureClone(node, options).outerHTML,
+      width: CANVAS.width,
+      height: CANVAS.height,
+      scale: 1,
+      transparent: true
+    };
+  }
+
+  async function captureItemsInBatches(items, sharedStyles, onBatchStart) {
+    const blobs = [];
+
+    for (let start = 0; start < items.length; start += EXPORT_BATCH_SIZE) {
+      const batchIndex = Math.floor(start / EXPORT_BATCH_SIZE);
+      const batchItems = items.slice(start, start + EXPORT_BATCH_SIZE);
+
+      if (onBatchStart) {
+        onBatchStart({
+          batchIndex,
+          batchCount: Math.ceil(items.length / EXPORT_BATCH_SIZE),
+          start,
+          end: Math.min(start + batchItems.length, items.length),
+          total: items.length
+        });
+      }
+
+      const batchBlobs = await captureItems(batchItems, sharedStyles);
+      blobs.push(...batchBlobs);
+    }
+
+    return blobs;
+  }
+
   async function prepareMobileExportItems() {
     const selected =
       project.mode === "gen"
@@ -1275,9 +1463,12 @@ export default function App() {
 
     try {
       const nextItems = [];
+      const styles = await collectExportStyles();
 
       if (project.mode === "gen") {
         const originalIndex = project.selectedCardIndex;
+        const items = [];
+        const exportedIndexes = [];
 
         for (const index of selected) {
           setProject((prev) => ({
@@ -1292,14 +1483,19 @@ export default function App() {
             continue;
           }
 
-          const canvas = await captureNode(node);
-          const blob = await canvasToBlob(canvas);
+          items.push(createExportItem(node));
+          exportedIndexes.push(index);
+        }
+
+        const blobs = await captureItemsInBatches(items, styles);
+        blobs.forEach((blob, arrayIndex) => {
+          const index = exportedIndexes[arrayIndex];
           nextItems.push({
             id: `gen-${index}`,
             label: `${index + 1}.png`,
             url: URL.createObjectURL(blob)
           });
-        }
+        });
 
         setProject((prev) => ({
           ...prev,
@@ -1307,6 +1503,8 @@ export default function App() {
         }));
       } else {
         const originalIndex = project.currentMergeIndex;
+        const items = [];
+        const exportedIndexes = [];
 
         for (const index of selected) {
           setProject((prev) => ({
@@ -1321,14 +1519,19 @@ export default function App() {
             continue;
           }
 
-          const canvas = await captureNode(node);
-          const blob = await canvasToBlob(canvas);
+          items.push(createExportItem(node));
+          exportedIndexes.push(index);
+        }
+
+        const blobs = await captureItemsInBatches(items, styles);
+        blobs.forEach((blob, arrayIndex) => {
+          const index = exportedIndexes[arrayIndex];
           nextItems.push({
             id: `merge-${index}`,
             label: `${index + 1}.png`,
             url: URL.createObjectURL(blob)
           });
-        }
+        });
 
         setProject((prev) => ({
           ...prev,
@@ -1355,6 +1558,9 @@ export default function App() {
     try {
       const zip = new JSZip();
       const originalIndex = project.selectedCardIndex;
+      const styles = await collectExportStyles();
+      const items = [];
+      const exportedIndexes = [];
 
       for (let index = 0; index < cards.length; index += 1) {
         setExportState({
@@ -1376,10 +1582,20 @@ export default function App() {
           continue;
         }
 
-        const canvas = await captureNode(node);
-        const blob = await canvasToBlob(canvas);
-        zip.file(`${index + 1}.png`, blob);
+        items.push(createExportItem(node));
+        exportedIndexes.push(index);
       }
+
+      const blobs = await captureItemsInBatches(items, styles, ({ end, total }) => {
+        setExportState({
+          open: true,
+          title: `正在生成圖片 ${end} / ${total}`
+        });
+      });
+      blobs.forEach((blob, arrayIndex) => {
+        const index = exportedIndexes[arrayIndex];
+        zip.file(`${index + 1}.png`, blob);
+      });
 
       if (isMobile) {
         setProject((prev) => ({
@@ -1414,17 +1630,19 @@ export default function App() {
     });
 
     try {
+      const styles = await collectExportStyles();
       if (project.mergeOverlays.length === 1) {
         await waitForPaint();
         const node = getMergerCaptureNode();
-        const canvas = await captureNode(node);
-        const blob = await canvasToBlob(canvas);
+        const blob = await captureNode(node, {}, styles);
         downloadBlob(`merge-${Date.now()}.png`, blob);
         return;
       }
 
       const zip = new JSZip();
       const originalIndex = project.currentMergeIndex;
+      const items = [];
+      const exportedIndexes = [];
       for (let index = 0; index < project.mergeOverlays.length; index += 1) {
         setExportState({
           open: true,
@@ -1440,10 +1658,24 @@ export default function App() {
 
         await waitForPaint();
         const node = getMergerCaptureNode();
-        const canvas = await captureNode(node);
-        const blob = await canvasToBlob(canvas);
-        zip.file(`merge-${index + 1}.png`, blob);
+        if (!node) {
+          continue;
+        }
+
+        items.push(createExportItem(node));
+        exportedIndexes.push(index);
       }
+
+      const blobs = await captureItemsInBatches(items, styles, ({ end, total }) => {
+        setExportState({
+          open: true,
+          title: `正在生成圖片 ${end} / ${total}`
+        });
+      });
+      blobs.forEach((blob, arrayIndex) => {
+        const index = exportedIndexes[arrayIndex];
+        zip.file(`merge-${index + 1}.png`, blob);
+      });
 
       setProject((prev) => ({
         ...prev,
@@ -1512,17 +1744,24 @@ export default function App() {
           description="先決定版型，再開始填內容。不同風格現在會切換不同排版，不只是換顏色。"
           title="風格格式"
         >
-          <div className="chip-grid style-grid">
-            {STYLE_PRESETS.map((item) => (
-              <button
-                className={`chip-btn style-chip ${project.style === item.id ? "is-active" : ""}`}
-                key={item.id}
-                onClick={() => updateProjectField("style", item.id)}
-                type="button"
-              >
-                <span className={`style-chip-preview variant-${item.variant}`} />
-                <span>{item.name}</span>
-              </button>
+          <div className="style-groups">
+            {groupedStylePresets.map((group) => (
+              <section className="style-group" key={group.id}>
+                <div className="style-group-head">{group.name}</div>
+                <div className="chip-grid style-grid">
+                  {group.items.map((item) => (
+                    <button
+                      className={`chip-btn style-chip ${project.style === item.id ? "is-active" : ""}`}
+                      key={item.id}
+                      onClick={() => updateProjectField("style", item.id)}
+                      type="button"
+                    >
+                      <span className={`style-chip-preview variant-${item.variant}`} />
+                      <span>{item.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
           <div className="field-grid">
@@ -1541,6 +1780,19 @@ export default function App() {
                   value={project.theme}
                 />
               </div>
+            </label>
+            <label className="field">
+              <span>字體組</span>
+              <select
+                onChange={(event) => updateProjectField("font", event.target.value)}
+                value={project.font}
+              >
+                {FONT_PRESETS.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
         </ControlSection>
@@ -1577,8 +1829,9 @@ export default function App() {
           <label className="field">
             <span>Markdown 內容</span>
             <textarea
+              className="markdown-input"
               onChange={(event) => updateProjectField("content", event.target.value)}
-              rows={14}
+              rows={24}
               value={project.content}
             />
           </label>

@@ -12,18 +12,68 @@ export const CANVAS = {
 
 export const DEFAULT_BACKGROUND = "/frame.png";
 
+export const STYLE_GROUPS = [
+  { id: "classic", name: "經典實用" },
+  { id: "editorial", name: "雜誌排版" },
+  { id: "retro", name: "復古紙感" },
+  { id: "mood", name: "氛圍配色" }
+];
+
 export const STYLE_PRESETS = [
-  { id: "minimal", name: "極簡專欄", variant: "minimal", family: "sans" },
-  { id: "memo", name: "課堂筆記", variant: "memo", family: "rounded" },
-  { id: "journal", name: "手帳整理", variant: "journal", family: "serif" },
-  { id: "magazine", name: "雜誌感", variant: "magazine", family: "serif" },
-  { id: "tutorial", name: "教程化", variant: "tutorial", family: "sans" },
-  { id: "review", name: "測評風", variant: "review", family: "sans" },
-  { id: "painpoint", name: "痛點法", variant: "painpoint", family: "sans" },
-  { id: "poster", name: "海報焦點", variant: "poster", family: "sans" },
-  { id: "tech", name: "科技簡報", variant: "tech", family: "sans" },
-  { id: "comic", name: "漫畫活力", variant: "comic", family: "rounded" },
-  { id: "elegant", name: "清新柔光", variant: "elegant", family: "serif" }
+  { id: "minimal", name: "極簡專欄", variant: "minimal", family: "sans", group: "classic" },
+  { id: "memo", name: "課堂筆記", variant: "memo", family: "rounded", group: "classic" },
+  { id: "journal", name: "手帳整理", variant: "journal", family: "serif", group: "classic" },
+  { id: "tutorial", name: "教程化", variant: "tutorial", family: "sans", group: "classic" },
+  { id: "review", name: "測評風", variant: "review", family: "sans", group: "classic" },
+  { id: "painpoint", name: "痛點法", variant: "painpoint", family: "sans", group: "classic" },
+  { id: "poster", name: "海報焦點", variant: "poster", family: "sans", group: "classic" },
+  { id: "tech", name: "科技簡報", variant: "tech", family: "sans", group: "classic" },
+  { id: "comic", name: "漫畫活力", variant: "comic", family: "rounded", group: "classic" },
+  { id: "magazine", name: "雜誌感", variant: "magazine", family: "serif", group: "editorial" },
+  { id: "modern", name: "現代編輯", variant: "modern", family: "sans", group: "editorial" },
+  { id: "elegant", name: "清新柔光", variant: "elegant", family: "serif", group: "editorial" },
+  { id: "darkpro", name: "暗色專業", variant: "darkpro", family: "sans", group: "editorial" },
+  { id: "reading", name: "閱讀筆記", variant: "reading", family: "serif", group: "editorial" },
+  { id: "vintage", name: "復古紙感", variant: "vintage", family: "serif", group: "retro" },
+  { id: "typewriter", name: "打字機札記", variant: "typewriter", family: "serif", group: "retro" },
+  { id: "deco", name: "裝飾派海報", variant: "deco", family: "serif", group: "retro" },
+  { id: "washi", name: "和風雜誌", variant: "washi", family: "serif", group: "retro" },
+  { id: "film", name: "膠片年鑑", variant: "film", family: "sans", group: "retro" },
+  { id: "warmsoft", name: "暖霧生活", variant: "warmsoft", family: "serif", group: "mood" },
+  { id: "dreamy", name: "夢幻漸變", variant: "dreamy", family: "serif", group: "mood" },
+  { id: "forest", name: "森林綠境", variant: "forest", family: "sans", group: "mood" },
+  { id: "rosegold", name: "玫瑰金霧", variant: "rosegold", family: "serif", group: "mood" }
+];
+
+export const FONT_PRESETS = [
+  {
+    id: "balanced",
+    name: "平衡黑體",
+    sans: '"Inter", "Noto Sans TC", sans-serif',
+    serif: '"Source Serif 4", "Noto Serif TC", serif',
+    rounded: '"Nunito", "Noto Sans TC", sans-serif'
+  },
+  {
+    id: "editorial",
+    name: "編輯感",
+    sans: '"IBM Plex Sans", "Noto Sans TC", sans-serif',
+    serif: '"Spectral", "Noto Serif TC", serif',
+    rounded: '"IBM Plex Sans", "Noto Sans TC", sans-serif'
+  },
+  {
+    id: "friendly",
+    name: "親和圓潤",
+    sans: '"Nunito", "Noto Sans TC", sans-serif',
+    serif: '"Source Serif 4", "Noto Serif TC", serif',
+    rounded: '"Nunito", "Noto Sans TC", sans-serif'
+  },
+  {
+    id: "classic",
+    name: "經典襯線",
+    sans: '"Inter", "Noto Sans TC", sans-serif',
+    serif: '"Cormorant Garamond", "Noto Serif TC", serif',
+    rounded: '"Nunito", "Noto Sans TC", sans-serif'
+  }
 ];
 
 export const STYLE_MIGRATION = {
@@ -73,6 +123,7 @@ export const DEFAULT_PROJECT = {
   adText: "收藏 + 分享給朋友",
   theme: "#2563eb",
   style: "minimal",
+  font: "balanced",
   scene: "default",
   useDefaultBg: true,
   uploadedBaseImg: null,
@@ -91,6 +142,13 @@ export function getStylePreset(styleId) {
   return (
     STYLE_PRESETS.find((item) => item.id === styleId) ||
     STYLE_PRESETS.find((item) => item.id === "minimal")
+  );
+}
+
+export function getFontPreset(fontId) {
+  return (
+    FONT_PRESETS.find((item) => item.id === fontId) ||
+    FONT_PRESETS.find((item) => item.id === "balanced")
   );
 }
 

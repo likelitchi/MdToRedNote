@@ -2,6 +2,7 @@ import { marked } from "marked";
 import {
   CANVAS,
   DEFAULT_PROJECT,
+  FONT_PRESETS,
   SCENE_PRESETS,
   STYLE_MIGRATION,
   STYLE_PRESETS
@@ -265,12 +266,14 @@ export function normalizeProject(raw = {}) {
 
   const knownStyles = new Set(STYLE_PRESETS.map((item) => item.id));
   const knownScenes = new Set(SCENE_PRESETS.map((item) => item.id));
+  const knownFonts = new Set(FONT_PRESETS.map((item) => item.id));
   const migratedStyle = STYLE_MIGRATION[merged.style] || merged.style;
 
   merged.footerMode =
     merged.footerMode === "pagenum" ? "page" : merged.footerMode;
   merged.style = knownStyles.has(migratedStyle) ? migratedStyle : "minimal";
   merged.scene = knownScenes.has(merged.scene) ? merged.scene : "default";
+  merged.font = knownFonts.has(merged.font) ? merged.font : "balanced";
   merged.selectedCardIndex = Number.isFinite(merged.selectedCardIndex)
     ? merged.selectedCardIndex
     : 0;
