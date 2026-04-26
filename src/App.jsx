@@ -377,9 +377,27 @@ const MERGE_OVERLAY_OFFSET_MAX = 800;
 const MERGE_OVERLAY_OFFSET_STEP = 2;
 const TRANSPARENT_PIXEL_DATA_URL =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wIAAgMBApQf4QAAAABJRU5ErkJggg==";
+const MOBILE_EXPORT_BATCH_SIZE = 2;
 
 function getExportServiceUnavailableMessage() {
   return "匯出服務不可用。請使用 `npm run dev` 或 `npm run preview` 啟動；純靜態部署目前會改用瀏覽器備援匯出。";
+}
+
+function isExportTransportError(error) {
+  const message = String(error instanceof Error ? error.message : error || "").toLowerCase();
+  return (
+    message.includes("/__export_png") ||
+    message.includes("匯出服務不可用") ||
+    message.includes("failed to fetch") ||
+    message.includes("fetch failed") ||
+    message.includes("networkerror") ||
+    message.includes("network error") ||
+    message.includes("network request failed") ||
+    message.includes("load failed") ||
+    message.includes("connection closed") ||
+    message.includes("connection terminated") ||
+    message.includes("the network connection was lost")
+  );
 }
 
 function absolutizeExportUrl(rawUrl = "") {
@@ -400,6 +418,85 @@ function absolutizeInlineStyleUrls(styleText = "") {
     const resolved = absolutizeExportUrl(url);
     return `url(${quote}${resolved}${quote})`;
   });
+}
+
+function sanitizeStylesForClientExport(styleText = "") {
+  return String(styleText || "")
+    .replace(/@import\s+url\((['"]?)https?:\/\/[^)]+\1\)\s*;/gi, "")
+    .replace(/@import\s+(['"])https?:\/\/.+?\1\s*;/gi, "")
+    .replace(/@font-face\s*{[\s\S]*?}/gi, "");
+}
+
+function readCssRulesFromSheet(node) {
+  try {
+    const rules = Array.from(node?.sheet?.cssRules || []);
+    if (!rules.length) {
+      return "";
+    }
+
+    return rules.map((rule) => rule.cssText).join("\n");
+  } catch {
+    return "";
+  }
+}
+
+function isInlineableExportUrl(rawUrl = "") {
+  const value = String(rawUrl || "").trim();
+  return Boolean(value && !value.startsWith("#"));
+}
+
+async function inlineAssetUrlForExport(url, cache, fallback = TRANSPARENT_PIXEL_DATA_URL) {
+  const value = absolutizeExportUrl(url);
+  if (!isInlineableExportUrl(value)) {
+    return value || fallback;
+  }
+
+  if (value.startsWith("data:")) {
+    return value;
+  }
+
+  if (cache.has(value)) {
+    return cache.get(value);
+  }
+
+  const promise = (async () => {
+    try {
+      const response = await fetch(value, { mode: "cors" });
+      if (!response.ok) {
+        throw new Error(`Failed to load asset: ${value}`);
+      }
+
+      const blob = await response.blob();
+      return await blobToDataUrl(blob);
+    } catch {
+      return fallback;
+    }
+  })();
+
+  cache.set(value, promise);
+  return promise;
+}
+
+async function inlineCssUrlsForExport(styleText = "", cache, fallback = TRANSPARENT_PIXEL_DATA_URL) {
+  const source = String(styleText || "");
+  const matches = Array.from(source.matchAll(/url\((['"]?)(.*?)\1\)/g));
+
+  if (!matches.length) {
+    return source;
+  }
+
+  const replacements = await Promise.all(
+    matches.map(async (match) => {
+      const rawUrl = match[2] || "";
+      const nextUrl = await inlineAssetUrlForExport(rawUrl, cache, fallback);
+      return {
+        original: match[0],
+        replacement: `url("${nextUrl}")`
+      };
+    }),
+  );
+
+  return replacements.reduce((result, item) => result.replace(item.original, item.replacement), source);
 }
 
 function prepareNodeForClientExport(node) {
@@ -433,43 +530,33 @@ function blobToDataUrl(blob) {
 }
 
 async function inlineImageSourceForExport(src, cache) {
-  const value = absolutizeExportUrl(src);
-  if (!value) {
-    return TRANSPARENT_PIXEL_DATA_URL;
-  }
-
-  if (value.startsWith("data:") || value.startsWith("blob:")) {
-    return value;
-  }
-
-  if (cache.has(value)) {
-    return cache.get(value);
-  }
-
-  const promise = (async () => {
-    try {
-      const response = await fetch(value, { mode: "cors" });
-      if (!response.ok) {
-        throw new Error(`Failed to load image: ${value}`);
-      }
-
-      const blob = await response.blob();
-      return await blobToDataUrl(blob);
-    } catch {
-      return TRANSPARENT_PIXEL_DATA_URL;
-    }
-  })();
-
-  cache.set(value, promise);
-  return promise;
+  return inlineAssetUrlForExport(src, cache, TRANSPARENT_PIXEL_DATA_URL);
 }
 
-async function inlineImagesForClientExport(node) {
+async function inlineStyleAttributesForClientExport(node, cache) {
   if (!node) {
     return;
   }
 
-  const cache = new Map();
+  const elements = [node, ...Array.from(node.querySelectorAll("*"))];
+  await Promise.all(
+    elements.map(async (element) => {
+      const style = element.getAttribute("style");
+      if (!style || !style.includes("url(")) {
+        return;
+      }
+
+      const nextStyle = await inlineCssUrlsForExport(style, cache);
+      element.setAttribute("style", nextStyle);
+    }),
+  );
+}
+
+async function inlineImagesForClientExport(node, cache = new Map()) {
+  if (!node) {
+    return;
+  }
+
   const images = Array.from(node.querySelectorAll("img"));
 
   await Promise.all(
@@ -496,7 +583,10 @@ async function renderHtmlToBlobClient(html, styles, width = CANVAS.width, height
   }
 
   prepareNodeForClientExport(root);
-  await inlineImagesForClientExport(root);
+  const assetCache = new Map();
+  await inlineStyleAttributesForClientExport(root, assetCache);
+  await inlineImagesForClientExport(root, assetCache);
+  const inlinedStyles = await inlineCssUrlsForExport(styles, assetCache);
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
@@ -515,7 +605,7 @@ async function renderHtmlToBlobClient(html, styles, width = CANVAS.width, height
   container.style.overflow = "hidden";
 
   const styleNode = document.createElement("style");
-  styleNode.textContent = String(styles || "");
+  styleNode.textContent = String(inlinedStyles || "");
   container.appendChild(styleNode);
   container.appendChild(root);
   foreignObject.appendChild(container);
@@ -862,7 +952,8 @@ export default function App() {
   const exportMergerRef = useRef(null);
   const exportStylesCacheRef = useRef({
     hrefs: "",
-    css: ""
+    css: "",
+    clientCss: ""
   });
   const dragRef = useRef(null);
   const previewTouchRef = useRef({
@@ -1505,8 +1596,12 @@ export default function App() {
       })
       .join("|");
 
-    if (exportStylesCacheRef.current.hrefs === hrefSignature && exportStylesCacheRef.current.css) {
-      return exportStylesCacheRef.current.css;
+    if (
+      exportStylesCacheRef.current.hrefs === hrefSignature &&
+      exportStylesCacheRef.current.css &&
+      exportStylesCacheRef.current.clientCss
+    ) {
+      return exportStylesCacheRef.current;
     }
 
     const chunks = [];
@@ -1518,31 +1613,44 @@ export default function App() {
       }
 
       if (node.tagName === "LINK") {
+        const rulesCss = readCssRulesFromSheet(node);
+        if (rulesCss) {
+          chunks.push(rulesCss);
+          continue;
+        }
+
         const href = node.getAttribute("href");
         if (!href) {
           continue;
         }
 
-        const response = await fetch(new URL(href, window.location.origin).toString());
-        if (!response.ok) {
-          throw new Error(`Failed to load stylesheet: ${href}`);
-        }
+        try {
+          const response = await fetch(new URL(href, window.location.origin).toString());
+          if (!response.ok) {
+            throw new Error(`Failed to load stylesheet: ${href}`);
+          }
 
-        chunks.push(await response.text());
+          chunks.push(await response.text());
+        } catch (error) {
+          console.warn("Skip stylesheet during export", href, error);
+        }
       }
     }
 
     const css = chunks.join("\n");
+    const clientCss = sanitizeStylesForClientExport(css);
     exportStylesCacheRef.current = {
       hrefs: hrefSignature,
-      css
+      css,
+      clientCss
     };
-    return css;
+    return exportStylesCacheRef.current;
   }
 
   async function exportNodeToBlob(node, options = {}, sharedStyles) {
     const clone = buildCaptureClone(node, options);
-    const styles = sharedStyles || (await collectExportStyles());
+    const stylesBundle = sharedStyles || (await collectExportStyles());
+    const styles = stylesBundle.css;
 
     try {
       const response = await fetch("/__export_png", {
@@ -1567,22 +1675,22 @@ export default function App() {
 
       return response.blob();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "";
-      const shouldUseClientFallback =
-        message.includes("/__export_png") ||
-        message.includes("匯出服務不可用") ||
-        message.toLowerCase().includes("failed to fetch");
-
-      if (!shouldUseClientFallback) {
+      if (!isExportTransportError(error)) {
         throw error;
       }
 
-      return renderHtmlToBlobClient(clone.outerHTML, styles, CANVAS.width, CANVAS.height);
+      return renderHtmlToBlobClient(
+        clone.outerHTML,
+        stylesBundle.clientCss,
+        CANVAS.width,
+        CANVAS.height
+      );
     }
   }
 
   async function exportItemsToBlobs(items, sharedStyles) {
-    const styles = sharedStyles || (await collectExportStyles());
+    const stylesBundle = sharedStyles || (await collectExportStyles());
+    const styles = stylesBundle.css;
     if (!items.length) {
       return [];
     }
@@ -1607,17 +1715,11 @@ export default function App() {
       const payload = await response.json();
       return Array.isArray(payload?.images) ? payload.images.map((item) => base64PngToBlob(item)) : [];
     } catch (error) {
-      const message = error instanceof Error ? error.message : "";
-      const shouldUseClientFallback =
-        message.includes("/__export_png") ||
-        message.includes("匯出服務不可用") ||
-        message.toLowerCase().includes("failed to fetch");
-
-      if (!shouldUseClientFallback) {
+      if (!isExportTransportError(error)) {
         throw error;
       }
 
-      return renderItemsToBlobsClient(items, styles);
+      return renderItemsToBlobsClient(items, stylesBundle.clientCss);
     }
   }
 
@@ -1625,8 +1727,7 @@ export default function App() {
     try {
       return await exportNodeToBlob(node, options, sharedStyles);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "";
-      if (message.toLowerCase().includes("failed to fetch")) {
+      if (isExportTransportError(error)) {
         throw new Error("匯出服務尚未啟動，請重新執行 `npm run dev` 後再試");
       }
 
@@ -1638,8 +1739,7 @@ export default function App() {
     try {
       return await exportItemsToBlobs(items, sharedStyles);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "";
-      if (message.toLowerCase().includes("failed to fetch")) {
+      if (isExportTransportError(error)) {
         throw new Error("匯出服務尚未啟動，請重新執行 `npm run dev` 後再試");
       }
 
@@ -1684,15 +1784,16 @@ export default function App() {
 
   async function captureItemsInBatches(items, sharedStyles, onBatchStart) {
     const blobs = [];
+    const batchSize = isMobile ? MOBILE_EXPORT_BATCH_SIZE : EXPORT_BATCH_SIZE;
 
-    for (let start = 0; start < items.length; start += EXPORT_BATCH_SIZE) {
-      const batchIndex = Math.floor(start / EXPORT_BATCH_SIZE);
-      const batchItems = items.slice(start, start + EXPORT_BATCH_SIZE);
+    for (let start = 0; start < items.length; start += batchSize) {
+      const batchIndex = Math.floor(start / batchSize);
+      const batchItems = items.slice(start, start + batchSize);
 
       if (onBatchStart) {
         onBatchStart({
           batchIndex,
-          batchCount: Math.ceil(items.length / EXPORT_BATCH_SIZE),
+          batchCount: Math.ceil(items.length / batchSize),
           start,
           end: Math.min(start + batchItems.length, items.length),
           total: items.length
