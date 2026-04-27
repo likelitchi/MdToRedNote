@@ -375,12 +375,10 @@ const MERGE_OVERLAY_SCALE_STEP = 0.05;
 const MERGE_OVERLAY_OFFSET_MIN = -800;
 const MERGE_OVERLAY_OFFSET_MAX = 800;
 const MERGE_OVERLAY_OFFSET_STEP = 2;
-const TRANSPARENT_PIXEL_DATA_URL =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wIAAgMBApQf4QAAAABJRU5ErkJggg==";
 const MOBILE_EXPORT_BATCH_SIZE = 2;
 
 function getExportServiceUnavailableMessage() {
-  return "匯出服務不可用。請使用 `npm run dev` 或 `npm run preview` 啟動；純靜態部署目前會改用瀏覽器備援匯出。";
+  return "匯出服務不可用。請使用 `npm run dev` 或 `npm run preview` 啟動；為了保持版面精準度，下載不再使用瀏覽器端備援匯出。";
 }
 
 function isExportTransportError(error) {
@@ -400,33 +398,6 @@ function isExportTransportError(error) {
   );
 }
 
-function absolutizeExportUrl(rawUrl = "") {
-  const value = String(rawUrl || "").trim();
-  if (!value || value.startsWith("data:") || value.startsWith("blob:") || value.startsWith("#")) {
-    return value;
-  }
-
-  try {
-    return new URL(value, window.location.origin).toString();
-  } catch {
-    return value;
-  }
-}
-
-function absolutizeInlineStyleUrls(styleText = "") {
-  return String(styleText || "").replace(/url\((['"]?)(.*?)\1\)/g, (match, quote = "", url = "") => {
-    const resolved = absolutizeExportUrl(url);
-    return `url(${quote}${resolved}${quote})`;
-  });
-}
-
-function sanitizeStylesForClientExport(styleText = "") {
-  return String(styleText || "")
-    .replace(/@import\s+url\((['"]?)https?:\/\/[^)]+\1\)\s*;/gi, "")
-    .replace(/@import\s+(['"])https?:\/\/.+?\1\s*;/gi, "")
-    .replace(/@font-face\s*{[\s\S]*?}/gi, "");
-}
-
 function readCssRulesFromSheet(node) {
   try {
     const rules = Array.from(node?.sheet?.cssRules || []);
@@ -438,219 +409,6 @@ function readCssRulesFromSheet(node) {
   } catch {
     return "";
   }
-}
-
-function isInlineableExportUrl(rawUrl = "") {
-  const value = String(rawUrl || "").trim();
-  return Boolean(value && !value.startsWith("#"));
-}
-
-async function inlineAssetUrlForExport(url, cache, fallback = TRANSPARENT_PIXEL_DATA_URL) {
-  const value = absolutizeExportUrl(url);
-  if (!isInlineableExportUrl(value)) {
-    return value || fallback;
-  }
-
-  if (value.startsWith("data:")) {
-    return value;
-  }
-
-  if (cache.has(value)) {
-    return cache.get(value);
-  }
-
-  const promise = (async () => {
-    try {
-      const response = await fetch(value, { mode: "cors" });
-      if (!response.ok) {
-        throw new Error(`Failed to load asset: ${value}`);
-      }
-
-      const blob = await response.blob();
-      return await blobToDataUrl(blob);
-    } catch {
-      return fallback;
-    }
-  })();
-
-  cache.set(value, promise);
-  return promise;
-}
-
-async function inlineCssUrlsForExport(styleText = "", cache, fallback = TRANSPARENT_PIXEL_DATA_URL) {
-  const source = String(styleText || "");
-  const matches = Array.from(source.matchAll(/url\((['"]?)(.*?)\1\)/g));
-
-  if (!matches.length) {
-    return source;
-  }
-
-  const replacements = await Promise.all(
-    matches.map(async (match) => {
-      const rawUrl = match[2] || "";
-      const nextUrl = await inlineAssetUrlForExport(rawUrl, cache, fallback);
-      return {
-        original: match[0],
-        replacement: `url("${nextUrl}")`
-      };
-    }),
-  );
-
-  return replacements.reduce((result, item) => result.replace(item.original, item.replacement), source);
-}
-
-function prepareNodeForClientExport(node) {
-  if (!node) {
-    return;
-  }
-
-  const elements = [node, ...Array.from(node.querySelectorAll("*"))];
-  elements.forEach((element) => {
-    if (element.tagName === "IMG") {
-      const src = element.getAttribute("src");
-      if (src) {
-        element.setAttribute("src", absolutizeExportUrl(src));
-      }
-    }
-
-    const style = element.getAttribute("style");
-    if (style) {
-      element.setAttribute("style", absolutizeInlineStyleUrls(style));
-    }
-  });
-}
-
-function blobToDataUrl(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(reader.error || new Error("Failed to convert blob to data URL"));
-    reader.readAsDataURL(blob);
-  });
-}
-
-async function inlineImageSourceForExport(src, cache) {
-  return inlineAssetUrlForExport(src, cache, TRANSPARENT_PIXEL_DATA_URL);
-}
-
-async function inlineStyleAttributesForClientExport(node, cache) {
-  if (!node) {
-    return;
-  }
-
-  const elements = [node, ...Array.from(node.querySelectorAll("*"))];
-  await Promise.all(
-    elements.map(async (element) => {
-      const style = element.getAttribute("style");
-      if (!style || !style.includes("url(")) {
-        return;
-      }
-
-      const nextStyle = await inlineCssUrlsForExport(style, cache);
-      element.setAttribute("style", nextStyle);
-    }),
-  );
-}
-
-async function inlineImagesForClientExport(node, cache = new Map()) {
-  if (!node) {
-    return;
-  }
-
-  const images = Array.from(node.querySelectorAll("img"));
-
-  await Promise.all(
-    images.map(async (image) => {
-      const src = image.getAttribute("src");
-      if (!src) {
-        return;
-      }
-
-      const inlinedSrc = await inlineImageSourceForExport(src, cache);
-      image.setAttribute("src", inlinedSrc);
-      image.setAttribute("crossorigin", "anonymous");
-    }),
-  );
-}
-
-async function renderHtmlToBlobClient(html, styles, width = CANVAS.width, height = CANVAS.height) {
-  const wrapper = document.createElement("div");
-  wrapper.innerHTML = String(html || "").trim();
-  const root = wrapper.firstElementChild;
-
-  if (!root) {
-    throw new Error("Capture node not found");
-  }
-
-  prepareNodeForClientExport(root);
-  const assetCache = new Map();
-  await inlineStyleAttributesForClientExport(root, assetCache);
-  await inlineImagesForClientExport(root, assetCache);
-  const inlinedStyles = await inlineCssUrlsForExport(styles, assetCache);
-
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-  svg.setAttribute("width", String(width));
-  svg.setAttribute("height", String(height));
-  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-
-  const foreignObject = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
-  foreignObject.setAttribute("width", "100%");
-  foreignObject.setAttribute("height", "100%");
-
-  const container = document.createElement("div");
-  container.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
-  container.style.width = `${width}px`;
-  container.style.height = `${height}px`;
-  container.style.overflow = "hidden";
-
-  const styleNode = document.createElement("style");
-  styleNode.textContent = String(inlinedStyles || "");
-  container.appendChild(styleNode);
-  container.appendChild(root);
-  foreignObject.appendChild(container);
-  svg.appendChild(foreignObject);
-
-  const svgBlob = new Blob([new XMLSerializer().serializeToString(svg)], {
-    type: "image/svg+xml;charset=utf-8"
-  });
-  const url = URL.createObjectURL(svgBlob);
-
-  try {
-    const image = await new Promise((resolve, reject) => {
-      const nextImage = new Image();
-      nextImage.decoding = "async";
-      nextImage.onload = () => resolve(nextImage);
-      nextImage.onerror = () => reject(new Error("瀏覽器備援匯出失敗"));
-      nextImage.src = url;
-    });
-
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext("2d");
-
-    if (!context) {
-      throw new Error("Canvas context unavailable");
-    }
-
-    context.clearRect(0, 0, width, height);
-    context.drawImage(image, 0, 0, width, height);
-
-    return await canvasToBlob(canvas);
-  } finally {
-    URL.revokeObjectURL(url);
-  }
-}
-
-async function renderItemsToBlobsClient(items, styles) {
-  const blobs = [];
-
-  for (const item of items) {
-    blobs.push(await renderHtmlToBlobClient(item?.html, styles, item?.width || CANVAS.width, item?.height || CANVAS.height));
-  }
-
-  return blobs;
 }
 
 async function readExportError(response) {
@@ -952,8 +710,7 @@ export default function App() {
   const exportMergerRef = useRef(null);
   const exportStylesCacheRef = useRef({
     hrefs: "",
-    css: "",
-    clientCss: ""
+    css: ""
   });
   const dragRef = useRef(null);
   const previewTouchRef = useRef({
@@ -1596,11 +1353,7 @@ export default function App() {
       })
       .join("|");
 
-    if (
-      exportStylesCacheRef.current.hrefs === hrefSignature &&
-      exportStylesCacheRef.current.css &&
-      exportStylesCacheRef.current.clientCss
-    ) {
+    if (exportStylesCacheRef.current.hrefs === hrefSignature && exportStylesCacheRef.current.css) {
       return exportStylesCacheRef.current;
     }
 
@@ -1638,11 +1391,9 @@ export default function App() {
     }
 
     const css = chunks.join("\n");
-    const clientCss = sanitizeStylesForClientExport(css);
     exportStylesCacheRef.current = {
       hrefs: hrefSignature,
-      css,
-      clientCss
+      css
     };
     return exportStylesCacheRef.current;
   }
@@ -1651,41 +1402,27 @@ export default function App() {
     const clone = buildCaptureClone(node, options);
     const stylesBundle = sharedStyles || (await collectExportStyles());
     const styles = stylesBundle.css;
+    const response = await fetch("/__export_png", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        html: clone.outerHTML,
+        styles,
+        width: CANVAS.width,
+        height: CANVAS.height,
+        scale: 1,
+        transparent: true,
+        baseUrl: `${window.location.origin}/`
+      })
+    });
 
-    try {
-      const response = await fetch("/__export_png", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          html: clone.outerHTML,
-          styles,
-          width: CANVAS.width,
-          height: CANVAS.height,
-          scale: 1,
-          transparent: true,
-          baseUrl: `${window.location.origin}/`
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(await readExportError(response));
-      }
-
-      return response.blob();
-    } catch (error) {
-      if (!isExportTransportError(error)) {
-        throw error;
-      }
-
-      return renderHtmlToBlobClient(
-        clone.outerHTML,
-        stylesBundle.clientCss,
-        CANVAS.width,
-        CANVAS.height
-      );
+    if (!response.ok) {
+      throw new Error(await readExportError(response));
     }
+
+    return response.blob();
   }
 
   async function exportItemsToBlobs(items, sharedStyles) {
@@ -1694,33 +1431,24 @@ export default function App() {
     if (!items.length) {
       return [];
     }
+    const response = await fetch("/__export_png", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        items,
+        styles,
+        baseUrl: `${window.location.origin}/`
+      })
+    });
 
-    try {
-      const response = await fetch("/__export_png", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          items,
-          styles,
-          baseUrl: `${window.location.origin}/`
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(await readExportError(response));
-      }
-
-      const payload = await response.json();
-      return Array.isArray(payload?.images) ? payload.images.map((item) => base64PngToBlob(item)) : [];
-    } catch (error) {
-      if (!isExportTransportError(error)) {
-        throw error;
-      }
-
-      return renderItemsToBlobsClient(items, stylesBundle.clientCss);
+    if (!response.ok) {
+      throw new Error(await readExportError(response));
     }
+
+    const payload = await response.json();
+    return Array.isArray(payload?.images) ? payload.images.map((item) => base64PngToBlob(item)) : [];
   }
 
   async function captureNode(node, options = {}, sharedStyles) {

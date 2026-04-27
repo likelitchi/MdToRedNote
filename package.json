@@ -10,6 +10,14 @@
     "install:chrome": "npx puppeteer browsers install chrome"
   },
   "dependencies": {
+    "@fontsource/cormorant-garamond": "^5.2.11",
+    "@fontsource/ibm-plex-sans": "^5.2.8",
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/noto-sans-tc": "^5.2.9",
+    "@fontsource/noto-serif-tc": "^5.2.10",
+    "@fontsource/nunito": "^5.2.7",
+    "@fontsource/source-serif-4": "^5.2.9",
+    "@fontsource/spectral": "^5.2.8",
     "file-saver": "^2.0.5",
     "jszip": "^3.10.1",
     "lucide-react": "^1.8.0",
