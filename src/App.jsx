@@ -369,6 +369,7 @@ function base64PngToBlob(base64) {
 }
 
 const EXPORT_BATCH_SIZE = 4;
+const SERVERLESS_EXPORT_BATCH_SIZE = 1;
 const MERGE_OVERLAY_SCALE_MIN = 0.25;
 const MERGE_OVERLAY_SCALE_MAX = 3;
 const MERGE_OVERLAY_SCALE_STEP = 0.05;
@@ -378,7 +379,23 @@ const MERGE_OVERLAY_OFFSET_STEP = 2;
 const MOBILE_EXPORT_BATCH_SIZE = 2;
 
 function getExportServiceUnavailableMessage() {
+  if (import.meta.env.PROD) {
+    return "匯出服務不可用。請確認 Vercel 已部署 `/api/export_png`，且 serverless function 能啟動 Chromium。";
+  }
+
   return "匯出服務不可用。請使用 `npm run dev` 或 `npm run preview` 啟動；為了保持版面精準度，下載不再使用瀏覽器端備援匯出。";
+}
+
+function getExportEndpointCandidates() {
+  return import.meta.env.PROD ? ["/api/export_png", "/__export_png"] : ["/__export_png", "/api/export_png"];
+}
+
+function getExportBatchSize(isMobileViewport) {
+  if (import.meta.env.PROD) {
+    return SERVERLESS_EXPORT_BATCH_SIZE;
+  }
+
+  return isMobileViewport ? MOBILE_EXPORT_BATCH_SIZE : EXPORT_BATCH_SIZE;
 }
 
 function isExportTransportError(error) {
@@ -429,6 +446,39 @@ async function readExportError(response) {
   }
 
   return bodyText || `Export failed (HTTP ${response.status})`;
+}
+
+async function fetchExportEndpoint(body) {
+  const endpoints = getExportEndpointCandidates();
+  let lastError;
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (response.ok) {
+        return response;
+      }
+
+      const message = await readExportError(response);
+      const error = new Error(message);
+      error.status = response.status;
+      throw error;
+    } catch (error) {
+      lastError = error;
+      if (!isExportTransportError(error)) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError || new Error(getExportServiceUnavailableMessage());
 }
 
 function CoverCard({ project, stylePreset }) {
@@ -1402,25 +1452,15 @@ export default function App() {
     const clone = buildCaptureClone(node, options);
     const stylesBundle = sharedStyles || (await collectExportStyles());
     const styles = stylesBundle.css;
-    const response = await fetch("/__export_png", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        html: clone.outerHTML,
-        styles,
-        width: CANVAS.width,
-        height: CANVAS.height,
-        scale: 1,
-        transparent: true,
-        baseUrl: `${window.location.origin}/`
-      })
+    const response = await fetchExportEndpoint({
+      html: clone.outerHTML,
+      styles,
+      width: CANVAS.width,
+      height: CANVAS.height,
+      scale: 1,
+      transparent: true,
+      baseUrl: `${window.location.origin}/`
     });
-
-    if (!response.ok) {
-      throw new Error(await readExportError(response));
-    }
 
     return response.blob();
   }
@@ -1431,21 +1471,11 @@ export default function App() {
     if (!items.length) {
       return [];
     }
-    const response = await fetch("/__export_png", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        items,
-        styles,
-        baseUrl: `${window.location.origin}/`
-      })
+    const response = await fetchExportEndpoint({
+      items,
+      styles,
+      baseUrl: `${window.location.origin}/`
     });
-
-    if (!response.ok) {
-      throw new Error(await readExportError(response));
-    }
 
     const payload = await response.json();
     return Array.isArray(payload?.images) ? payload.images.map((item) => base64PngToBlob(item)) : [];
@@ -1456,7 +1486,7 @@ export default function App() {
       return await exportNodeToBlob(node, options, sharedStyles);
     } catch (error) {
       if (isExportTransportError(error)) {
-        throw new Error("匯出服務尚未啟動，請重新執行 `npm run dev` 後再試");
+        throw new Error(getExportServiceUnavailableMessage());
       }
 
       throw error;
@@ -1468,7 +1498,7 @@ export default function App() {
       return await exportItemsToBlobs(items, sharedStyles);
     } catch (error) {
       if (isExportTransportError(error)) {
-        throw new Error("匯出服務尚未啟動，請重新執行 `npm run dev` 後再試");
+        throw new Error(getExportServiceUnavailableMessage());
       }
 
       throw error;
@@ -1512,7 +1542,7 @@ export default function App() {
 
   async function captureItemsInBatches(items, sharedStyles, onBatchStart) {
     const blobs = [];
-    const batchSize = isMobile ? MOBILE_EXPORT_BATCH_SIZE : EXPORT_BATCH_SIZE;
+    const batchSize = getExportBatchSize(isMobile);
 
     for (let start = 0; start < items.length; start += batchSize) {
       const batchIndex = Math.floor(start / batchSize);

@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/export_png.js": {
+      "maxDuration": 60
+    }
+  }
+}
