@@ -648,7 +648,6 @@ function GeneratorCard({
                 stylePreset={stylePreset}
               />
             )}
-            <Footer project={project} pageNumber={cardIndex + 1} totalCards={totalCards} />
             {stickers.map((sticker) => {
               const isActive =
                 activeSticker &&
@@ -686,6 +685,7 @@ function GeneratorCard({
               );
             })}
           </div>
+          <Footer project={project} pageNumber={cardIndex + 1} totalCards={totalCards} />
         </div>
       </div>
     </div>
@@ -746,12 +746,12 @@ function MergerCard({ project, previewScale, cardRef, displayIndex, shellClassNa
                 <img alt="" className="merge-background-image" src={project.mergeBg} />
               ) : null}
             </div>
-            <Footer
-              project={project}
-              pageNumber={safeIndex + 1}
-              totalCards={Math.max(project.mergeOverlays.length, 1)}
-            />
           </div>
+          <Footer
+            project={project}
+            pageNumber={safeIndex + 1}
+            totalCards={Math.max(project.mergeOverlays.length, 1)}
+          />
         </div>
       </div>
     </div>

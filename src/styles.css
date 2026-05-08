@@ -3552,7 +3552,7 @@ img {
   position: absolute;
   left: 92px;
   right: 92px;
-  bottom: 30px;
+  bottom: 42px;
   width: max-content;
   max-width: min(760px, calc(100% - 184px));
   margin-inline: auto;
@@ -3564,6 +3564,17 @@ img {
   color: #334155;
   text-align: center;
   backdrop-filter: blur(14px);
+  z-index: 8;
+}
+
+.card-root.has-default-frame .card-footer {
+  left: 160px;
+  right: 160px;
+  bottom: 8px;
+  max-width: min(620px, calc(100% - 320px));
+  min-width: 118px;
+  padding: 10px 18px;
+  font-size: 0.86em;
 }
 
 .sticker-item {
