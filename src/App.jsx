@@ -81,6 +81,33 @@ function ControlSection({ title, description, children }) {
   );
 }
 
+function DownloadProgress({ progress }) {
+  if (!progress.open) {
+    return null;
+  }
+
+  const percentage = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
+
+  return (
+    <div className="download-progress" role="status">
+      <div className="download-progress-copy">
+        <span>{progress.title}</span>
+        <span>{percentage}%</span>
+      </div>
+      <div
+        aria-label={progress.title}
+        aria-valuemax={progress.total}
+        aria-valuemin={0}
+        aria-valuenow={progress.current}
+        className="download-progress-track"
+        role="progressbar"
+      >
+        <div className="download-progress-fill" style={{ width: `${percentage}%` }} />
+      </div>
+    </div>
+  );
+}
+
 function ToolButton({ icon: Icon, label, description, active, onClick, compact = false }) {
   return (
     <button
@@ -377,6 +404,12 @@ const MERGE_OVERLAY_OFFSET_MIN = -800;
 const MERGE_OVERLAY_OFFSET_MAX = 800;
 const MERGE_OVERLAY_OFFSET_STEP = 2;
 const MOBILE_EXPORT_BATCH_SIZE = 2;
+const EMPTY_MOBILE_EXPORT_PROGRESS = {
+  open: false,
+  current: 0,
+  total: 0,
+  title: ""
+};
 
 function getExportServiceUnavailableMessage() {
   if (import.meta.env.PROD) {
@@ -745,6 +778,7 @@ export default function App() {
   });
   const [mobileExportItems, setMobileExportItems] = useState([]);
   const [isPreparingMobileExport, setIsPreparingMobileExport] = useState(false);
+  const [mobileExportProgress, setMobileExportProgress] = useState(EMPTY_MOBILE_EXPORT_PROGRESS);
   const [exportState, setExportState] = useState({
     open: false,
     title: "準備中"
@@ -1540,9 +1574,9 @@ export default function App() {
     };
   }
 
-  async function captureItemsInBatches(items, sharedStyles, onBatchStart) {
+  async function captureItemsInBatches(items, sharedStyles, onBatchStart, batchSizeOverride) {
     const blobs = [];
-    const batchSize = getExportBatchSize(isMobile);
+    const batchSize = batchSizeOverride || getExportBatchSize(isMobile);
 
     for (let start = 0; start < items.length; start += batchSize) {
       const batchIndex = Math.floor(start / batchSize);
@@ -1579,6 +1613,12 @@ export default function App() {
     }
 
     setIsPreparingMobileExport(true);
+    setMobileExportProgress({
+      open: true,
+      current: 0,
+      total: selected.length,
+      title: "正在準備圖片..."
+    });
 
     try {
       const nextItems = [];
@@ -1589,7 +1629,14 @@ export default function App() {
         const items = [];
         const exportedIndexes = [];
 
-        for (const index of selected) {
+        for (const [selectedIndex, index] of selected.entries()) {
+          setMobileExportProgress({
+            open: true,
+            current: selectedIndex + 1,
+            total: selected.length,
+            title: `正在準備第 ${selectedIndex + 1} 張照片，共 ${selected.length} 張`
+          });
+
           setProject((prev) => ({
             ...prev,
             selectedCardIndex: index
@@ -1606,7 +1653,19 @@ export default function App() {
           exportedIndexes.push(index);
         }
 
-        const blobs = await captureItemsInBatches(items, styles);
+        const blobs = await captureItemsInBatches(
+          items,
+          styles,
+          ({ end, total }) => {
+            setMobileExportProgress({
+              open: true,
+              current: end,
+              total,
+              title: `正在生成第 ${end} 張照片，共 ${total} 張`
+            });
+          },
+          1,
+        );
         blobs.forEach((blob, arrayIndex) => {
           const index = exportedIndexes[arrayIndex];
           nextItems.push({
@@ -1625,7 +1684,14 @@ export default function App() {
         const items = [];
         const exportedIndexes = [];
 
-        for (const index of selected) {
+        for (const [selectedIndex, index] of selected.entries()) {
+          setMobileExportProgress({
+            open: true,
+            current: selectedIndex + 1,
+            total: selected.length,
+            title: `正在準備第 ${selectedIndex + 1} 張照片，共 ${selected.length} 張`
+          });
+
           setProject((prev) => ({
             ...prev,
             currentMergeIndex: index
@@ -1642,7 +1708,19 @@ export default function App() {
           exportedIndexes.push(index);
         }
 
-        const blobs = await captureItemsInBatches(items, styles);
+        const blobs = await captureItemsInBatches(
+          items,
+          styles,
+          ({ end, total }) => {
+            setMobileExportProgress({
+              open: true,
+              current: end,
+              total,
+              title: `正在生成第 ${end} 張照片，共 ${total} 張`
+            });
+          },
+          1,
+        );
         blobs.forEach((blob, arrayIndex) => {
           const index = exportedIndexes[arrayIndex];
           nextItems.push({
@@ -1665,6 +1743,7 @@ export default function App() {
       window.alert(`圖片準備失敗：${message}`);
     } finally {
       setIsPreparingMobileExport(false);
+      setMobileExportProgress(EMPTY_MOBILE_EXPORT_PROGRESS);
     }
   }
 
@@ -2030,6 +2109,7 @@ export default function App() {
             {cards.map((_, index) => (
               <button
                 className={`download-chip ${selected.includes(index) ? "is-active" : ""}`}
+                disabled={isPreparingMobileExport}
                 key={`download-gen-${index}`}
                 onClick={() => toggleMobileDownloadIndex(index)}
                 type="button"
@@ -2041,6 +2121,7 @@ export default function App() {
           <div className="download-actions">
             <button
               className="seg-btn"
+              disabled={isPreparingMobileExport}
               onClick={() =>
                 setMobileDownloadSelection((prev) => ({
                   ...prev,
@@ -2053,6 +2134,7 @@ export default function App() {
             </button>
             <button
               className="seg-btn"
+              disabled={isPreparingMobileExport}
               onClick={() =>
                 setMobileDownloadSelection((prev) => ({
                   ...prev,
@@ -2063,10 +2145,16 @@ export default function App() {
             >
               清空
             </button>
-            <button className="seg-btn is-wide" onClick={prepareMobileExportItems} type="button">
+            <button
+              className="seg-btn is-wide"
+              disabled={isPreparingMobileExport}
+              onClick={prepareMobileExportItems}
+              type="button"
+            >
               {isPreparingMobileExport ? "準備中" : "產生圖片"}
             </button>
           </div>
+          <DownloadProgress progress={mobileExportProgress} />
           {mobileExportItems.length ? (
             <div className="mobile-export-gallery">
               {mobileExportItems.map((item) => (
@@ -2254,6 +2342,7 @@ export default function App() {
             {Array.from({ length: mergeCount }, (_, index) => (
               <button
                 className={`download-chip ${selected.includes(index) ? "is-active" : ""}`}
+                disabled={isPreparingMobileExport}
                 key={`download-merge-${index}`}
                 onClick={() => toggleMobileDownloadIndex(index)}
                 type="button"
@@ -2265,6 +2354,7 @@ export default function App() {
           <div className="download-actions">
             <button
               className="seg-btn"
+              disabled={isPreparingMobileExport}
               onClick={() =>
                 setMobileDownloadSelection((prev) => ({
                   ...prev,
@@ -2277,6 +2367,7 @@ export default function App() {
             </button>
             <button
               className="seg-btn"
+              disabled={isPreparingMobileExport}
               onClick={() =>
                 setMobileDownloadSelection((prev) => ({
                   ...prev,
@@ -2287,10 +2378,16 @@ export default function App() {
             >
               清空
             </button>
-            <button className="seg-btn is-wide" onClick={prepareMobileExportItems} type="button">
+            <button
+              className="seg-btn is-wide"
+              disabled={isPreparingMobileExport}
+              onClick={prepareMobileExportItems}
+              type="button"
+            >
               {isPreparingMobileExport ? "準備中" : "產生圖片"}
             </button>
           </div>
+          <DownloadProgress progress={mobileExportProgress} />
           {mobileExportItems.length ? (
             <div className="mobile-export-gallery">
               {mobileExportItems.map((item) => (
